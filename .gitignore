@@ -1,0 +1,31 @@
+# Byte-compiled / optimized / DLL files
+**/__pycache__/
+**/*.py[cod]
+**/*$py.class
+
+# PDF specifications (large files, ~230MB)
+*.pdf
+**/pdfs/
+**/documents/
+
+# Local Python Virtual Environments
+.venv/
+venv/
+env/
+.env
+
+# Local IDE settings and system files
+.vscode/
+.idea/
+.DS_Store
+
+# Temporary logs
+*.log
+**/logs/
+test_output_part_a_38_44.md
+C:\Users\jezeh\.gemini\antigravity\brain\f214b7b2-f735-4f5a-84a2-666e18ac890f\scratch\test_scan_dir/
+
+# Git backups
+.git.bak/
+**/.git.bak/
+
