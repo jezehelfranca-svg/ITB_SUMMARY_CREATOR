@@ -627,6 +627,22 @@
                     </label>
                 </div>
 
+                <div class="toggle-container">
+                    <div>
+                        <div style="font-weight: 500;">Enable AI Polishing</div>
+                        <div style="font-size: 0.75rem; color: var(--text-muted);">Polish Item & 상세 내용 with Gemini</div>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="toggle-ai">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <div class="toggle-container" id="api-key-container" style="display: none; flex-direction: column; align-items: flex-start; gap: 0.5rem;">
+                    <div style="font-weight: 500; font-size: 0.85rem;">Gemini API Key</div>
+                    <input type="password" id="input-api-key" placeholder="Enter API Key" style="width: 100%; background: rgba(255,255,255,0.03); border: 1px solid var(--glass-border); border-radius: 6px; padding: 0.4rem 0.75rem; color: var(--text-main); font-family: inherit; font-size: 0.85rem;">
+                </div>
+
                 <div class="toggle-container" style="border: none;">
                     <div>
                         <div style="font-weight: 500;">Style Template</div>
@@ -718,6 +734,9 @@
         const fileInput = document.getElementById('file-input');
         const uploadStatus = document.getElementById('upload-status');
         const toggleForce = document.getElementById('toggle-force');
+        const toggleAi = document.getElementById('toggle-ai');
+        const apiKeyContainer = document.getElementById('api-key-container');
+        const inputApiKey = document.getElementById('input-api-key');
         const btnRun = document.getElementById('btn-run');
         const runText = document.getElementById('run-text');
         const runSpinner = document.getElementById('run-spinner');
@@ -735,6 +754,15 @@
         let allRows = [];
         let logPoller = null;
         let isExtracting = false;
+
+        // Toggle API key visibility based on AI check
+        toggleAi.addEventListener('change', () => {
+            if (toggleAi.checked) {
+                apiKeyContainer.style.display = 'flex';
+            } else {
+                apiKeyContainer.style.display = 'none';
+            }
+        });
 
         // Load local PDFs on startup
         async function fetchLocalPDFs() {
@@ -870,6 +898,8 @@
                 formData.append('file', uploadedFile);
             }
             formData.append('force_extract', toggleForce.checked);
+            formData.append('enable_ai', toggleAi.checked);
+            formData.append('api_key', inputApiKey.value);
 
             try {
                 const res = await fetch('/api/extract', {

@@ -7,6 +7,8 @@ import threading
 from flask import Flask, request, jsonify, render_template, send_file, Response
 from werkzeug.utils import secure_filename
 from openpyxl import load_workbook
+import google.generativeai as genai
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # Ensure project root is in Python path
 project_dir = os.path.dirname(os.path.abspath(__file__))
@@ -14,6 +16,66 @@ if project_dir not in sys.path:
     sys.path.append(project_dir)
 
 import extract_to_excel
+
+def process_clause_with_gemini(record, model):
+    req = record.get("Requirement", "")
+    prompt = f"""
+You are an expert telecom and instrumentation engineering assistant.
+Analyze this technical specification requirement clause:
+"{req}"
+
+Please produce:
+1. A refined, specific "Item" label (max 5 words) that categorizes this telecom/security system or component (e.g. "CCTV System Ingress Protection", "UPS Redundant Battery Backup", "PAGA Master Control Unit"). Do not use generic labels if a specific one is mentioned.
+2. A professional detailed summary/commentary in English or Korean for the "상세 내용" column (e.g. "Provide dual redundant 10kVA UPS systems with 3 hours Ni-Cd battery backup..."). Focus on key parameters, values, and standards. Ensure any project or site names like "Simhadri", "Pudimadaka", or "CTGU" are strictly replaced with "Site Alpha" or "Site Beta".
+
+Format your response exactly as a JSON object with keys "Item" and "상세 내용". Return ONLY the JSON object. Do not include markdown code block formatting (like ```json).
+"""
+    try:
+        response = model.generate_content(prompt)
+        text = response.text.strip()
+        text = re.sub(r'^```json\s*|\s*```$', '', text, flags=re.IGNORECASE)
+        data = json.loads(text)
+        return {
+            "Item": data.get("Item", record.get("Item", "")),
+            "상세 내용": data.get("상세 내용", record.get("상세 내용", ""))
+        }
+    except Exception as e:
+        print(f"Gemini API error on clause: {e}")
+        return {
+            "Item": record.get("Item", ""),
+            "상세 내용": record.get("상세 내용", "")
+        }
+
+def polish_clauses_with_ai(records, api_key):
+    print("Configuring Gemini API key and launching AI polisher...")
+    genai.configure(api_key=api_key)
+    model = genai.GenerativeModel('gemini-1.5-flash')
+    
+    polished_records = [None] * len(records)
+    
+    def process_index(idx, rec):
+        print(f"AI polishing clause {idx+1}/{len(records)}...")
+        res = process_clause_with_gemini(rec, model)
+        new_rec = dict(rec)
+        new_rec["Item"] = res["Item"]
+        new_rec["상세 내용"] = res["상세 내용"]
+        return idx, new_rec
+
+    with ThreadPoolExecutor(max_workers=8) as executor:
+        futures = [executor.submit(process_index, i, r) for i, r in enumerate(records)]
+        for fut in as_completed(futures):
+            try:
+                idx, polished_rec = fut.result()
+                polished_records[idx] = polished_rec
+            except Exception as e:
+                print(f"Error in AI worker thread: {e}")
+                
+    for i in range(len(polished_records)):
+        if polished_records[i] is None:
+            polished_records[i] = records[i]
+            
+    print("AI polishing completed successfully for all clauses!")
+    return polished_records
 
 app = Flask(__name__, template_folder=os.path.join(project_dir, 'templates'))
 app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50MB limit
@@ -93,6 +155,8 @@ def start_extraction():
     data = request.form
     selected_files = request.form.getlist('files')
     force_extract = request.form.get('force_extract', 'false').lower() == 'true'
+    enable_ai = request.form.get('enable_ai', 'false').lower() == 'true'
+    api_key = request.form.get('api_key', '').strip()
     
     # Check if there is an uploaded file
     uploaded_file = request.files.get('file')
@@ -223,6 +287,12 @@ def start_extraction():
                                 all_records.append(record)
                     doc.close()
                     print(f"Dynamic extraction finished for {fname}. Found {len(all_records)} clauses.")
+
+            if enable_ai and api_key:
+                try:
+                    all_records = polish_clauses_with_ai(all_records, api_key)
+                except Exception as ai_err:
+                    print(f"AI polishing failed: {ai_err}. Falling back to default rules.")
 
             # Fully anonymize all collected records
             anonymized_records = []

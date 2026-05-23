@@ -36,3 +36,10 @@ telecom-wiki-app/
 *.gsheet
 *.gdoc
 
+# Extraction outputs (avoid tracking generated tables)
+Part_*.xlsx
+Part_*.csv
+telecom_extracted_requirements.xlsx
+telecom_extracted_requirements.csv
+
+
