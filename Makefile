@@ -4,13 +4,14 @@ PYTHON = python
 PDF_DIR = .
 OUTPUT_DIR = output_chunks
 
-.PHONY: help install diagnose extract test batch
+.PHONY: help install diagnose extract test batch run-extract
 
 help:
 	@echo "HiFi PDF Extraction Pipeline Automation"
 	@echo "========================================"
 	@echo "Available commands:"
 	@echo "  make install        - Install python requirements and system packages"
+	@echo "  make run-extract    - Run standalone extraction on all PDFs and export to Excel"
 	@echo "  make diagnose PDF=x - Diagnose page classification on a specific PDF"
 	@echo "  make extract PDF=x  - Extract a specific PDF to Markdown"
 	@echo "  make test           - Run full verification suite on Part_A sample"
@@ -37,3 +38,7 @@ test:
 
 batch:
 	$(PYTHON) -m hifi_extractor batch "*.pdf" -o "$(OUTPUT_DIR)"
+
+run-extract:
+	$(PYTHON) extract_to_excel.py
+
