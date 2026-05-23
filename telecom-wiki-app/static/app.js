@@ -107,6 +107,7 @@ async function initApp() {
     await loadProjectData(currentProjectId);
     renderTQs();
     renderIndexedFiles();
+    setupHiFiExtractor();
 }
 
 // Category Tabs Switcher
@@ -319,6 +320,10 @@ function updateHeader() {
     } else if (activeTab === 'tq') {
         title.innerText = 'Technical Query (TQ) Sheet';
         subtitle.innerText = 'Manage bidder clarification queries to resolve document ambiguities, ready for export.';
+    } else if (activeTab === 'extractor') {
+        title.innerText = 'HiFi Extractor Console';
+        subtitle.innerText = 'Execute the tiered high-fidelity extraction pipeline locally on your PDF specification sheets.';
+        loadAvailablePDFs();
     }
 }
 
@@ -899,3 +904,154 @@ function reloadProjectsCatalogScript() {
         document.body.appendChild(script);
     });
 }
+
+// --- HiFi Extractor Console Tab Logic ---
+let availablePDFs = [];
+let lastExtractedText = "";
+
+async function loadAvailablePDFs() {
+    const selector = document.getElementById('extractorFile');
+    if (!selector) return;
+    
+    if (serverOnline) {
+        try {
+            const response = await fetch('/api/pdf-files');
+            if (response.ok) {
+                availablePDFs = await response.json();
+            } else {
+                throw new Error("Failed to load PDF files list");
+            }
+        } catch (e) {
+            console.error("PDF files load error:", e);
+            availablePDFs = INDEXED_FILES; // fallback to hardcoded list
+        }
+    } else {
+        availablePDFs = INDEXED_FILES; // fallback to hardcoded list
+    }
+    
+    selector.innerHTML = '';
+    if (availablePDFs.length === 0) {
+        selector.innerHTML = '<option value="">No PDF files found</option>';
+        return;
+    }
+    
+    availablePDFs.forEach(file => {
+        const opt = document.createElement('option');
+        opt.value = file;
+        opt.innerText = file;
+        selector.appendChild(opt);
+    });
+}
+
+function setupHiFiExtractor() {
+    const btnRun = document.getElementById('btnRunExtraction');
+    const btnCopy = document.getElementById('btnCopyExtracted');
+    const btnDownload = document.getElementById('btnDownloadExtracted');
+    
+    if (!btnRun) return;
+    
+    btnRun.addEventListener('click', async () => {
+        const filename = document.getElementById('extractorFile').value;
+        const pages = document.getElementById('extractorPages').value.trim();
+        const ocr_lang = document.getElementById('extractorOcrLang').value.trim();
+        const dpi = parseInt(document.getElementById('extractorOcrDpi').value) || 300;
+        const suppress_margins = document.getElementById('extractorSuppressMargins').checked;
+        const margin_method = document.getElementById('extractorMarginMethod').value;
+        const header_zone = parseFloat(document.getElementById('extractorHeaderPct').value) || 5;
+        const footer_zone = parseFloat(document.getElementById('extractorFooterPct').value) || 5;
+        const chunk_size = document.getElementById('extractorEnableChunking').checked ? 
+                           parseInt(document.getElementById('extractorChunkSize').value) || 512 : 0;
+        const overlap = parseInt(document.getElementById('extractorOverlap').value) || 50;
+        
+        if (!filename) {
+            alert("Please select a target PDF document.");
+            return;
+        }
+        
+        if (!serverOnline) {
+            alert("The backend Flask server is offline. This operation requires a running local server.");
+            return;
+        }
+        
+        // Show spinner, hide other states
+        document.getElementById('extractorSpinner').style.display = 'flex';
+        document.getElementById('extractorEmptyState').style.display = 'none';
+        document.getElementById('extractorResultArea').style.display = 'none';
+        btnCopy.disabled = true;
+        btnDownload.disabled = true;
+        
+        try {
+            const response = await fetch('/api/extract', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    filename,
+                    pages,
+                    ocr_lang,
+                    dpi,
+                    suppress_margins,
+                    margin_method,
+                    header_zone,
+                    footer_zone,
+                    chunk_size,
+                    overlap
+                })
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                lastExtractedText = data.markdown;
+                
+                // Set text preview
+                document.getElementById('extractorOutputText').innerText = lastExtractedText || "No text extracted.";
+                
+                // Set stats header
+                const statsDiv = document.getElementById('extractorStats');
+                const elapsed = data.details.elapsed_seconds || 0.0;
+                const chars = data.markdown.length;
+                const totalPages = data.details.pages_processed || 0;
+                statsDiv.innerHTML = `
+                    <span><i class="fa-solid fa-clock"></i> Time: <b>${elapsed.toFixed(1)}s</b></span>
+                    <span><i class="fa-solid fa-copy"></i> Extracted: <b>${totalPages} pages</b></span>
+                    <span><i class="fa-solid fa-font"></i> Chars: <b>${chars.toLocaleString()}</b></span>
+                `;
+                
+                // Show result area
+                document.getElementById('extractorResultArea').style.display = 'flex';
+                btnCopy.disabled = false;
+                btnDownload.disabled = false;
+            } else {
+                const errorData = await response.json();
+                throw new Error(errorData.error || "Unknown server error during extraction.");
+            }
+        } catch (e) {
+            alert(`Extraction failed: ${e.message}`);
+            document.getElementById('extractorEmptyState').style.display = 'flex';
+        } finally {
+            document.getElementById('extractorSpinner').style.display = 'none';
+        }
+    });
+    
+    // Copy button
+    btnCopy.addEventListener('click', () => {
+        if (!lastExtractedText) return;
+        navigator.clipboard.writeText(lastExtractedText)
+            .then(() => alert("Extracted Markdown text copied to clipboard!"))
+            .catch(err => alert("Copy failed: " + err));
+    });
+    
+    // Download button
+    btnDownload.addEventListener('click', () => {
+        if (!lastExtractedText) return;
+        const blob = new Blob([lastExtractedText], { type: "text/markdown;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'extracted_document.md';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+    });
+}
+

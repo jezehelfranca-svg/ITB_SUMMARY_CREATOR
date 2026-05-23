@@ -43,6 +43,10 @@
                         <i class="fa-solid fa-file-invoice"></i>
                         <span>TQ Generator</span>
                     </li>
+                    <li class="nav-item" data-tab="extractor">
+                        <i class="fa-solid fa-gears"></i>
+                        <span>HiFi Extractor</span>
+                    </li>
                 </ul>
             </div>
             <div class="sidebar-footer">
@@ -306,6 +310,136 @@
                                     <!-- Injected by app.js -->
                                 </tbody>
                             </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Tab 5: HiFi Extractor Console -->
+            <section class="tab-panel" id="tab-extractor">
+                <div class="extractor-layout">
+                    <!-- Left: Configuration Form -->
+                    <div class="glass-card extractor-config-panel">
+                        <h2 style="font-family: 'Outfit'; font-size: 1.4rem; color: var(--accent-cyan); margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.5rem;"><i class="fa-solid fa-sliders"></i> Configuration</h2>
+                        <form id="extractorForm" style="display: flex; flex-direction: column; gap: 1.25rem;">
+                            <div class="form-group" style="display: flex; flex-direction: column; gap: 0.35rem;">
+                                <label for="extractorFile" style="font-size: 0.8rem; color: var(--text-secondary); font-weight: 600;">Target PDF Document</label>
+                                <select id="extractorFile" style="padding: 0.6rem; font-size: 0.85rem; background: rgba(0,0,0,0.4); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary);" required>
+                                    <!-- Populated dynamically via API -->
+                                    <option value="">Loading PDF files...</option>
+                                </select>
+                            </div>
+                            <div class="form-group" style="display: flex; flex-direction: column; gap: 0.35rem;">
+                                <label for="extractorPages" style="font-size: 0.8rem; color: var(--text-secondary); font-weight: 600;">Page Range</label>
+                                <input type="text" id="extractorPages" placeholder="e.g. 2-3 or 38-44 (leave blank for all)" style="padding: 0.6rem; font-size: 0.85rem; background: rgba(0,0,0,0.4); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary);">
+                            </div>
+                            
+                            <!-- OCR Settings -->
+                            <div style="border-top: 1px solid var(--border-color); padding-top: 1rem;">
+                                <h3 style="font-family: 'Outfit'; font-size: 1rem; color: var(--text-primary); margin-bottom: 0.75rem;"><i class="fa-solid fa-eye"></i> OCR Engine</h3>
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+                                    <div class="form-group" style="display: flex; flex-direction: column; gap: 0.35rem;">
+                                        <label for="extractorOcrLang" style="font-size: 0.75rem; color: var(--text-muted);">Language</label>
+                                        <input type="text" id="extractorOcrLang" value="eng" style="padding: 0.5rem; font-size: 0.8rem; background: rgba(0,0,0,0.4); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary);">
+                                    </div>
+                                    <div class="form-group" style="display: flex; flex-direction: column; gap: 0.35rem;">
+                                        <label for="extractorOcrDpi" style="font-size: 0.75rem; color: var(--text-muted);">DPI Resolution</label>
+                                        <input type="number" id="extractorOcrDpi" value="300" style="padding: 0.5rem; font-size: 0.8rem; background: rgba(0,0,0,0.4); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary);">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Margin Suppression Settings -->
+                            <div style="border-top: 1px solid var(--border-color); padding-top: 1rem;">
+                                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem;">
+                                    <h3 style="font-family: 'Outfit'; font-size: 1rem; color: var(--text-primary);"><i class="fa-solid fa-crop-simple"></i> Margin Suppression</h3>
+                                    <label class="switch-container" style="display: flex; align-items: center; gap: 0.4rem; cursor: pointer; font-size: 0.8rem; color: var(--text-secondary);">
+                                        <input type="checkbox" id="extractorSuppressMargins" checked style="cursor: pointer;"> Enable
+                                    </label>
+                                </div>
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+                                    <div class="form-group" style="display: flex; flex-direction: column; gap: 0.35rem;">
+                                        <label for="extractorMarginMethod" style="font-size: 0.75rem; color: var(--text-muted);">Method</label>
+                                        <select id="extractorMarginMethod" style="padding: 0.5rem; font-size: 0.8rem; background: rgba(0,0,0,0.4); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary);">
+                                            <option value="static_zone">Static Zone (5%)</option>
+                                            <option value="dbscan">DBSCAN Clustering</option>
+                                        </select>
+                                    </div>
+                                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem;">
+                                        <div class="form-group" style="display: flex; flex-direction: column; gap: 0.35rem;">
+                                            <label for="extractorHeaderPct" style="font-size: 0.75rem; color: var(--text-muted);">Header %</label>
+                                            <input type="number" id="extractorHeaderPct" value="5" step="0.5" style="padding: 0.5rem; font-size: 0.8rem; background: rgba(0,0,0,0.4); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary);">
+                                        </div>
+                                        <div class="form-group" style="display: flex; flex-direction: column; gap: 0.35rem;">
+                                            <label for="extractorFooterPct" style="font-size: 0.75rem; color: var(--text-muted);">Footer %</label>
+                                            <input type="number" id="extractorFooterPct" value="5" step="0.5" style="padding: 0.5rem; font-size: 0.8rem; background: rgba(0,0,0,0.4); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary);">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Chunking Settings -->
+                            <div style="border-top: 1px solid var(--border-color); padding-top: 1rem;">
+                                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem;">
+                                    <h3 style="font-family: 'Outfit'; font-size: 1rem; color: var(--text-primary);"><i class="fa-solid fa-scissors"></i> Token-Aware Chunking</h3>
+                                    <label style="display: flex; align-items: center; gap: 0.4rem; cursor: pointer; font-size: 0.8rem; color: var(--text-secondary);">
+                                        <input type="checkbox" id="extractorEnableChunking" style="cursor: pointer;"> Enable
+                                    </label>
+                                </div>
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+                                    <div class="form-group" style="display: flex; flex-direction: column; gap: 0.35rem;">
+                                        <label for="extractorChunkSize" style="font-size: 0.75rem; color: var(--text-muted);">Max Tokens</label>
+                                        <input type="number" id="extractorChunkSize" value="512" style="padding: 0.5rem; font-size: 0.8rem; background: rgba(0,0,0,0.4); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary);">
+                                    </div>
+                                    <div class="form-group" style="display: flex; flex-direction: column; gap: 0.35rem;">
+                                        <label for="extractorOverlap" style="font-size: 0.75rem; color: var(--text-muted);">Overlap Tokens</label>
+                                        <input type="number" id="extractorOverlap" value="50" style="padding: 0.5rem; font-size: 0.8rem; background: rgba(0,0,0,0.4); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary);">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <button type="button" class="btn-primary" id="btnRunExtraction" style="width: 100%; justify-content: center; margin-top: 0.5rem; padding: 0.85rem;">
+                                <i class="fa-solid fa-play"></i> Run HiFi Extraction
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Right: Live Output View -->
+                    <div class="glass-card extractor-output-panel">
+                        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem; margin-bottom: 1rem;">
+                            <h2 style="font-family: 'Outfit'; font-size: 1.4rem; color: var(--text-primary); display: flex; align-items: center; gap: 0.5rem;"><i class="fa-solid fa-square-poll-horizontal"></i> Extraction Output</h2>
+                            <div style="display: flex; gap: 0.5rem;">
+                                <button class="btn-secondary" id="btnCopyExtracted" style="padding: 0.4rem 0.8rem; font-size: 0.75rem;" disabled>
+                                    <i class="fa-regular fa-copy"></i> Copy
+                                </button>
+                                <button class="btn-secondary" id="btnDownloadExtracted" style="padding: 0.4rem 0.8rem; font-size: 0.75rem;" disabled>
+                                    <i class="fa-solid fa-download"></i> Download
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Running Indicator -->
+                        <div id="extractorSpinner" style="display: none; flex-direction: column; align-items: center; justify-content: center; height: 350px; gap: 1rem; color: var(--accent-cyan);">
+                            <i class="fa-solid fa-spinner fa-spin" style="font-size: 3rem;"></i>
+                            <span style="font-family: 'Outfit'; font-weight: 600;" id="extractorSpinnerStatus">Extracting text...</span>
+                            <span style="font-size: 0.8rem; color: var(--text-secondary);">This may take a few moments for OCR runs.</span>
+                        </div>
+
+                        <!-- Empty State -->
+                        <div id="extractorEmptyState" style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 350px; gap: 1rem; color: var(--text-muted); text-align: center;">
+                            <i class="fa-solid fa-file-invoice" style="font-size: 3rem;"></i>
+                            <span style="font-family: 'Outfit'; font-weight: 500; font-size: 1.1rem;">No Extraction Run Yet</span>
+                            <p style="font-size: 0.85rem; max-width: 320px;">Configure the target document and extraction options on the left, then click run.</p>
+                        </div>
+
+                        <!-- Log Console / Text View -->
+                        <div id="extractorResultArea" style="display: none; flex-direction: column; gap: 1rem; height: calc(100% - 60px);">
+                            <div style="display: flex; gap: 1.5rem; font-size: 0.8rem; color: var(--text-secondary); background: rgba(0,0,0,0.3); padding: 0.6rem 1rem; border-radius: 6px; border: 1px solid var(--border-color);" id="extractorStats">
+                                <!-- Populated dynamically -->
+                            </div>
+                            <div style="flex-grow: 1; overflow-y: auto; background: #000; border: 1px solid var(--border-color); border-radius: 6px; padding: 1.25rem; font-family: monospace; font-size: 0.85rem; color: #e2e8f0; max-height: 400px; white-space: pre-wrap;" id="extractorOutputText">
+                                <!-- Markdown printed here -->
+                            </div>
                         </div>
                     </div>
                 </div>

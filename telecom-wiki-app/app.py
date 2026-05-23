@@ -2,8 +2,14 @@ import os
 import json
 import csv
 import io
+import sys
 from flask import Flask, send_from_directory, jsonify, request, Response
 from scan_project import scan_pdfs, sanitize_id
+
+# Add parent path to import hifi_extractor package
+parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if parent_dir not in sys.path:
+    sys.path.append(parent_dir)
 
 app = Flask(__name__, static_folder='static')
 
@@ -122,6 +128,83 @@ def export_tqs():
             mimetype="text/csv",
             headers={"Content-disposition": "attachment; filename=telecom_security_tqs.csv"}
         )
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/pdf-files', methods=['GET'])
+def list_pdf_files():
+    try:
+        pdf_dir = "g:\\My Drive\\Project\\CTGU"
+        files = sorted([f for f in os.listdir(pdf_dir) if f.lower().endswith('.pdf')])
+        return jsonify(files)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/extract', methods=['POST'])
+def run_hifi_extract():
+    try:
+        data = request.json or {}
+        filename = data.get('filename')
+        pages = data.get('pages', '')
+        ocr_lang = data.get('ocr_lang', 'eng')
+        dpi = int(data.get('dpi', 300))
+        suppress_margins = bool(data.get('suppress_margins', True))
+        margin_method = data.get('margin_method', 'static_zone')
+        header_zone = float(data.get('header_zone', 5.0))
+        footer_zone = float(data.get('footer_zone', 5.0))
+        chunk_size = int(data.get('chunk_size', 0))
+        overlap = int(data.get('overlap', 50))
+        
+        if not filename:
+            return jsonify({"error": "Missing 'filename' in request"}), 400
+            
+        pdf_dir = "g:\\My Drive\\Project\\CTGU"
+        full_path = os.path.join(pdf_dir, filename)
+        if not os.path.exists(full_path):
+            return jsonify({"error": f"PDF file not found: {filename}"}), 404
+            
+        page_range = None
+        if pages:
+            if '-' in pages:
+                parts = pages.split('-')
+                page_range = (int(parts[0].strip()), int(parts[1].strip()))
+            else:
+                page = int(pages.strip())
+                page_range = (page, page)
+                
+        from hifi_extractor.pipeline import run_pipeline, PipelineConfig
+        
+        config = PipelineConfig(
+            ocr_language=ocr_lang,
+            dpi=dpi,
+            suppress_margins=suppress_margins,
+            margin_method=margin_method,
+            header_zone_pct=header_zone / 100.0,
+            footer_zone_pct=footer_zone / 100.0,
+            format_markdown=True,
+            enable_chunking=chunk_size > 0,
+            max_tokens=chunk_size if chunk_size > 0 else 512,
+            overlap_tokens=overlap,
+            include_page_numbers=True
+        )
+        
+        # Ensure Tesseract OCR is in the path
+        tess_path = r"C:\Program Files\Tesseract-OCR"
+        if os.path.exists(tess_path) and tess_path not in os.environ["PATH"]:
+            os.environ["PATH"] += os.pathsep + tess_path
+            
+        result = run_pipeline(
+            pdf_path=full_path,
+            config=config,
+            page_range=page_range
+        )
+        
+        return jsonify({
+            "status": "success",
+            "summary": result.summary(),
+            "markdown": result.markdown,
+            "details": result.to_dict()
+        })
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
