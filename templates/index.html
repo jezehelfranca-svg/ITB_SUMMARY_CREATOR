@@ -883,10 +883,11 @@
                     // Periodically check if the process is completed by polling logs
                     // A "Complete!" log signals completion
                     const checkInterval = setInterval(async () => {
-                        const logRes = await fetch('/api/logs?clear=false');
-                        const logData = await logRes.json();
-                        const isDone = logData.logs.some(line => line.includes('Complete!'));
-                        const isFailed = logData.logs.some(line => line.includes('Error in extraction process'));
+                        const statusRes = await fetch('/api/status');
+                        const statusData = await statusRes.json();
+                        
+                        const isDone = statusData.status === 'completed';
+                        const isFailed = statusData.status === 'failed';
                         
                         if (isDone || isFailed) {
                             clearInterval(checkInterval);
@@ -903,8 +904,8 @@
                                 appendLog('Pipeline completed successfully!', 'success');
                                 loadTablePreview();
                             } else {
-                                appendLog('Pipeline failed with errors. See logs.', 'error');
-                                alert('Extraction failed. Check the terminal console.');
+                                appendLog(`Pipeline failed: ${statusData.error}`, 'error');
+                                alert(`Extraction failed: ${statusData.error}`);
                             }
                         }
                     }, 1000);
@@ -940,6 +941,9 @@
                     rowCountLabel.textContent = '0 Clauses Found';
                     btnDlXlsx.disabled = true;
                     btnDlCsv.disabled = true;
+                    if (!data.success) {
+                        appendLog('Preview loading failed: ' + data.error, 'error');
+                    }
                 }
             } catch (err) {
                 console.error(err);

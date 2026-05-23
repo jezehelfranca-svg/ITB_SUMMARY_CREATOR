@@ -6,6 +6,7 @@ import sys
 import threading
 from flask import Flask, request, jsonify, render_template, send_file, Response
 from werkzeug.utils import secure_filename
+from openpyxl import load_workbook
 
 # Ensure project root is in Python path
 project_dir = os.path.dirname(os.path.abspath(__file__))
@@ -20,6 +21,13 @@ app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50MB limit
 # Global log buffer for UI streaming
 ui_logs = []
 logs_lock = threading.Lock()
+
+# Execution status dictionary to prevent frontend race conditions
+execution_status = {
+    "status": "idle",
+    "count": 0,
+    "error": None
+}
 
 class UILogRedirector:
     def __init__(self, original_stdout):
@@ -70,8 +78,17 @@ def get_logs():
             ui_logs.clear()
     return jsonify({"success": True, "logs": logs})
 
+@app.route('/api/status', methods=['GET'])
+def get_status():
+    return jsonify(execution_status)
+
 @app.route('/api/extract', methods=['POST'])
 def start_extraction():
+    # Set status to running
+    execution_status["status"] = "running"
+    execution_status["count"] = 0
+    execution_status["error"] = None
+
     # Clear logs at start of extraction
     with logs_lock:
         ui_logs.clear()
@@ -203,9 +220,13 @@ def start_extraction():
             print("Compiling final styled spreadsheet...")
             extract_to_excel.generate_excel_table(anonymized_records, extract_to_excel.example_xlsx, extract_to_excel.output_xlsx)
             print("Finished writing output tables. Complete!")
+            execution_status["status"] = "completed"
+            execution_status["count"] = len(anonymized_records)
             
         except Exception as e:
             print(f"Error in extraction process: {e}")
+            execution_status["status"] = "failed"
+            execution_status["error"] = str(e)
 
     # Launch extraction thread to avoid blocking Flask
     t = threading.Thread(target=run_async_extraction)
