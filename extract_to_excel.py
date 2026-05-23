@@ -69,23 +69,104 @@ def anonymize(text):
     return text
 
 # Group keyword classification for generating short Item labels
+CATEGORY_ORDER = {
+    "CCTV Surveillance System": 1,
+    "Access Control System (ACS)": 2,
+    "Public Address & General Alarm (PAGA) System": 3,
+    "Telephone Intercom System": 4,
+    "OT Network & Cybersecurity": 5,
+    "Structured Cabling & FOC": 6,
+    "UPS & DC Power Systems": 7,
+    "Control Room Civil / Environmental": 8,
+    "Telecom Specifications": 9
+}
+
+FALSE_POSITIVE_PATTERNS = [
+    r"\bvalve material specification\b",
+    r"\bpiping material specification\b",
+    r"\bpms\s*&\s*vms\b",
+    r"\bwelding specification\b",
+    r"\bbolt tension\b",
+    r"\bbolt torque\b",
+    r"\bflange joint\b",
+    r"\bmobile toilet\b",
+    r"\beffluent summary\b",
+    r"\bwater balance\b",
+    r"\bbarc guideline\b",
+    r"\bradiography source pit\b",
+    r"\bfilm processing\b",
+    r"\bclash checking\b",
+    r"\b3-d modelling\b",
+    r"\bhutments\b",
+    r"\blabour colony\b",
+    r"\bcanteen facility\b",
+    r"\boffice facility\b"
+]
+COMPILED_FP_PATS = [re.compile(pat, re.IGNORECASE) for pat in FALSE_POSITIVE_PATTERNS]
+
+def is_false_positive(text):
+    text_lower = text.lower()
+    for pat in COMPILED_FP_PATS:
+        if pat.search(text):
+            return True
+            
+    if "vms" in text_lower:
+        valve_context = ["valve", "piping", "fitting", "flange", "pms", "gasket", "material specification", "pressure rating", "asme"]
+        if any(w in text_lower for w in valve_context):
+            return True
+            
+    if "click on the document title" in text_lower or "table of contents" in text_lower:
+        return True
+        
+    if "standard drawing list" in text_lower or "list of engineering" in text_lower or "standard specifications list" in text_lower:
+        if len(re.findall(r'\bB773-\d+-\d+-\d+-\d+\b', text)) > 3 or len(re.findall(r'\bB773-\d+-\d+-\d+-SP-\d+\b', text)) > 3:
+            return True
+            
+    return False
+
 def get_item_label(text):
     text_lower = text.lower()
     if "cctv" in text_lower or "camera" in text_lower or "nvr" in text_lower:
         return "CCTV Surveillance System"
     if "paga" in text_lower or "loudspeaker" in text_lower or "public address" in text_lower:
-        return "PAGA System"
+        return "Public Address & General Alarm (PAGA) System"
     if "telephone" in text_lower or "telephony" in text_lower or "intercom" in text_lower or "pabx" in text_lower:
         return "Telephone Intercom System"
     if "fiber" in text_lower or "foc" in text_lower or "cabling" in text_lower or "cable" in text_lower:
         return "Structured Cabling & FOC"
     if "cybersecurity" in text_lower or "firewall" in text_lower or "switch" in text_lower or "dmz" in text_lower:
-        return "OT Cybersecurity & Network"
+        return "OT Network & Cybersecurity"
     if "ups" in text_lower or "battery" in text_lower or "charger" in text_lower:
         return "UPS & DC Power Systems"
     if "access control" in text_lower or "acs" in text_lower or "card reader" in text_lower:
-        return "Access Control System"
+        return "Access Control System (ACS)"
+    if "control room" in text_lower or "civil" in text_lower or "environmental" in text_lower:
+        return "Control Room Civil / Environmental"
     return "Telecom Specifications"
+
+def parse_page_number(page_str):
+    if not page_str:
+        return 999999
+    match = re.search(r'\d+', str(page_str))
+    if match:
+        return int(match.group(0))
+    return 999999
+
+def sort_and_arrange_records(records):
+    def get_sort_key(r):
+        cat = r.get("Item", "Telecom Specifications")
+        matched_cat = "Telecom Specifications"
+        for key in CATEGORY_ORDER.keys():
+            if key.lower() in cat.lower():
+                matched_cat = key
+                break
+        cat_order = CATEGORY_ORDER.get(matched_cat, 9)
+        file_name = r.get("ITB File Name", "")
+        page_num = parse_page_number(r.get("Page#", ""))
+        return (cat_order, file_name, page_num)
+    
+    return sorted(records, key=get_sort_key)
+
 
 def generate_excel_table(records, template_path, output_path):
     """Generates the final Excel table copying styles from the template."""
@@ -256,7 +337,7 @@ def run_extraction_suite():
                 para = para.strip().replace('\n', ' ')
                 para = re.sub(r'\s+', ' ', para)
                 
-                if len(para) > 15 and is_telecom_clause(para):
+                if len(para) > 15 and is_telecom_clause(para) and not is_false_positive(para):
                     # Get mapping lookup metadata
                     p_map = file_mapping.get(str(page_num), {})
                     doc_no = p_map.get("doc_no", "")
@@ -293,7 +374,8 @@ def run_extraction_suite():
                     
         doc.close()
         
-    generate_excel_table(all_records, example_xlsx, output_xlsx)
+    sorted_records = sort_and_arrange_records(all_records)
+    generate_excel_table(sorted_records, example_xlsx, output_xlsx)
 
 def main():
     parser = argparse.ArgumentParser(description="Standalone Telecom Specification Extraction Tool")
@@ -317,9 +399,12 @@ def main():
                     clean_r[k] = str(v)
                 else:
                     clean_r[k] = anonymize(v)
-            anonymized_records.append(clean_r)
+            # Filter false positives from loaded records
+            if not is_false_positive(clean_r.get("Requirement", "")):
+                anonymized_records.append(clean_r)
         
-        generate_excel_table(anonymized_records, example_xlsx, output_xlsx)
+        sorted_records = sort_and_arrange_records(anonymized_records)
+        generate_excel_table(sorted_records, example_xlsx, output_xlsx)
     else:
         print("Starting dynamic offline extraction from PDF documents (this may take a few minutes)...")
         run_extraction_suite()

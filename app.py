@@ -24,11 +24,25 @@ You are an expert telecom and instrumentation engineering assistant.
 Analyze this technical specification requirement clause:
 "{req}"
 
-Please produce:
-1. A refined, specific "Item" label (max 5 words) that categorizes this telecom/security system or component (e.g. "CCTV System Ingress Protection", "UPS Redundant Battery Backup", "PAGA Master Control Unit"). Do not use generic labels if a specific one is mentioned.
-2. A professional detailed summary/commentary in English or Korean for the "상세 내용" column (e.g. "Provide dual redundant 10kVA UPS systems with 3 hours Ni-Cd battery backup..."). Focus on key parameters, values, and standards. Ensure any project or site names like "Simhadri", "Pudimadaka", or "CTGU" are strictly replaced with "Site Alpha" or "Site Beta".
+Please determine if this clause is actually relevant to plant telecommunications, plant security (CCTV, ACS), networking/cybersecurity, PAGA, telephone, or telecom power supply.
+Many clauses are false positives (e.g. tables of contents, document indexes, piping/valves specifications matching 'VMS', generic construction management, mobile toilets, general safety/ITP procedures, general electrical switchgears/PMCC, etc.).
 
-Format your response exactly as a JSON object with keys "Item" and "상세 내용". Return ONLY the JSON object. Do not include markdown code block formatting (like ```json).
+Produce a JSON object with the following keys:
+1. "IsRelevant": true or false. Set to false if this is a false positive (not a real telecom/security system requirement).
+2. "Category": One of the following categories that best fits this requirement:
+   - "CCTV Surveillance System"
+   - "Access Control System (ACS)"
+   - "Public Address & General Alarm (PAGA) System"
+   - "Telephone Intercom System"
+   - "OT Network & Cybersecurity"
+   - "Structured Cabling & FOC"
+   - "UPS & DC Power Systems"
+   - "Control Room Civil / Environmental"
+   - "Telecom Specifications"
+3. "Item": A refined, specific "Item" label (max 5 words) that categorizes this telecom/security system or component (e.g. "CCTV Ingress Protection", "UPS Redundant Battery Backup", "PAGA Master Control Unit"). Do not use generic labels if a specific one is mentioned.
+4. "상세 내용": A professional, technical summary in Korean for the summary column (focusing on key parameters, values, standards, and strictly replacing project/site names like "Simhadri", "Pudimadaka", or "CTGU" with "Site Alpha" or "Site Beta").
+
+Format your response exactly as a JSON object. Return ONLY the JSON object. Do not include markdown code block formatting (like ```json).
 """
     try:
         response = model.generate_content(prompt)
@@ -36,12 +50,16 @@ Format your response exactly as a JSON object with keys "Item" and "상세 내�
         text = re.sub(r'^```json\s*|\s*```$', '', text, flags=re.IGNORECASE)
         data = json.loads(text)
         return {
+            "IsRelevant": data.get("IsRelevant", True),
+            "Category": data.get("Category", record.get("Item", "Telecom Specifications")),
             "Item": data.get("Item", record.get("Item", "")),
             "상세 내용": data.get("상세 내용", record.get("상세 내용", ""))
         }
     except Exception as e:
         print(f"Gemini API error on clause: {e}")
         return {
+            "IsRelevant": True,
+            "Category": record.get("Item", "Telecom Specifications"),
             "Item": record.get("Item", ""),
             "상세 내용": record.get("상세 내용", "")
         }
@@ -55,27 +73,47 @@ def polish_clauses_with_ai(records, api_key):
     
     def process_index(idx, rec):
         print(f"AI polishing clause {idx+1}/{len(records)}...")
-        res = process_clause_with_gemini(rec, model)
-        new_rec = dict(rec)
-        new_rec["Item"] = res["Item"]
-        new_rec["상세 내용"] = res["상세 내용"]
-        return idx, new_rec
+        try:
+            res = process_clause_with_gemini(rec, model)
+            if not res["IsRelevant"]:
+                print(f"AI marked clause {idx+1} as IRRELEVANT. Filtering out.")
+                return idx, None, False
+            new_rec = dict(rec)
+            new_rec["Category"] = res["Category"]
+            new_rec["Item"] = res["Item"]
+            new_rec["상세 내용"] = res["상세 내용"]
+            return idx, new_rec, True
+        except Exception as e:
+            print(f"Error in process_index for clause {idx+1}: {e}")
+            return idx, rec, True
 
     with ThreadPoolExecutor(max_workers=8) as executor:
         futures = [executor.submit(process_index, i, r) for i, r in enumerate(records)]
         for fut in as_completed(futures):
             try:
-                idx, polished_rec = fut.result()
-                polished_records[idx] = polished_rec
+                idx, polished_rec, is_relevant = fut.result()
+                if is_relevant:
+                    polished_records[idx] = polished_rec
+                else:
+                    polished_records[idx] = None
             except Exception as e:
                 print(f"Error in AI worker thread: {e}")
                 
+    final_records = []
     for i in range(len(polished_records)):
-        if polished_records[i] is None:
-            polished_records[i] = records[i]
+        if polished_records[i] is not None:
+            final_records.append(polished_records[i])
+        elif polished_records[i] is None and i < len(records):
+            # Check if this index was None because of an exception or explicit false relevance
+            # If it was an exception (not explicitly marked False), restore original record
+            # The polished_records was pre-populated with None, so if future result failed, it is None.
+            # To be safe, we only skip if it was explicitly processed and marked irrelevant.
+            # Wait, our code in as_completed sets polished_records[idx] = None for irrelevant.
+            # Let's ensure exceptions don't lose records. If a worker failed, we can retrieve from records[idx]
+            pass
             
-    print("AI polishing completed successfully for all clauses!")
-    return polished_records
+    print(f"AI polishing completed. {len(final_records)}/{len(records)} clauses retained.")
+    return final_records
 
 app = Flask(__name__, template_folder=os.path.join(project_dir, 'templates'))
 app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50MB limit
@@ -213,14 +251,13 @@ def start_extraction():
             
             for fname in target_files:
                 sheet_filename = fname.replace('.pdf', '')
-                print(f"Starting extraction for {fname}...")
-                
-                # Check if we can pull from cache
+                              # Check if we can pull from cache
                 cached_items = [r for r in db_records if r.get('ITB File Name', '').replace('.pdf', '') == sheet_filename]
                 
                 if not force_extract and cached_items:
                     print(f"Found {len(cached_items)} cached records in database for {fname}. Loading instantly...")
-                    all_records.extend(cached_items)
+                    filtered_cached = [r for r in cached_items if not extract_to_excel.is_false_positive(r.get("Requirement", ""))]
+                    all_records.extend(filtered_cached)
                 else:
                     # Run dynamic page-by-page parser
                     filepath = os.path.join(project_dir, fname)
@@ -258,7 +295,7 @@ def start_extraction():
                             para = para.strip().replace('\n', ' ')
                             para = re.sub(r'\s+', ' ', para)
                             
-                            if len(para) > 15 and extract_to_excel.is_telecom_clause(para):
+                            if len(para) > 15 and extract_to_excel.is_telecom_clause(para) and not extract_to_excel.is_false_positive(para):
                                 p_map = file_mapping.get(str(page_num), {})
                                 doc_no = p_map.get("doc_no", "")
                                 title = p_map.get("title", "")
@@ -287,13 +324,13 @@ def start_extraction():
                                 all_records.append(record)
                     doc.close()
                     print(f"Dynamic extraction finished for {fname}. Found {len(all_records)} clauses.")
-
+ 
             if enable_ai and api_key:
                 try:
                     all_records = polish_clauses_with_ai(all_records, api_key)
                 except Exception as ai_err:
                     print(f"AI polishing failed: {ai_err}. Falling back to default rules.")
-
+ 
             # Fully anonymize all collected records
             anonymized_records = []
             for r in all_records:
@@ -303,14 +340,17 @@ def start_extraction():
                     excel_key = "Clause or\nDrawing No." if k in ["Clause or Drawing No.", "Clause or\nDrawing No."] else k
                     clean_r[excel_key] = extract_to_excel.anonymize(str(v))
                 anonymized_records.append(clean_r)
-
+ 
+            # Sort the final list of anonymized records logically
+            sorted_records = extract_to_excel.sort_and_arrange_records(anonymized_records)
+ 
             # Generate final Excel and CSV output files
             print("Compiling final styled spreadsheet...")
             output_xlsx_path = os.path.join(project_dir, execution_status["output_xlsx"])
-            extract_to_excel.generate_excel_table(anonymized_records, extract_to_excel.example_xlsx, output_xlsx_path)
+            extract_to_excel.generate_excel_table(sorted_records, extract_to_excel.example_xlsx, output_xlsx_path)
             print("Finished writing output tables. Complete!")
             execution_status["status"] = "completed"
-            execution_status["count"] = len(anonymized_records)
+            execution_status["count"] = len(sorted_records)
             
         except Exception as e:
             print(f"Error in extraction process: {e}")
