@@ -441,15 +441,17 @@
             background: rgba(255, 255, 255, 0.05);
             border: 1px solid var(--glass-border);
             color: var(--text-main);
-            padding: 0.6rem 1.25rem;
+            padding: 0.5rem 1.25rem;
             border-radius: 8px;
             font-size: 0.9rem;
             font-weight: 500;
             cursor: pointer;
             transition: all 0.2s ease;
             display: flex;
+            flex-direction: column;
             align-items: center;
-            gap: 0.5rem;
+            justify-content: center;
+            text-align: center;
         }
 
         .btn-download:hover:not(:disabled) {
@@ -902,6 +904,7 @@
                             
                             if (isDone) {
                                 appendLog('Pipeline completed successfully!', 'success');
+                                updateDownloadButtons();
                                 loadTablePreview();
                             } else {
                                 appendLog(`Pipeline failed: ${statusData.error}`, 'error');
@@ -1006,10 +1009,26 @@
             window.location.href = '/api/download?format=csv';
         });
 
+        // Update download button labels based on status endpoint names
+        async function updateDownloadButtons() {
+            try {
+                const res = await fetch('/api/status');
+                const statusData = await res.json();
+                if (statusData.output_xlsx && statusData.output_csv) {
+                    btnDlXlsx.innerHTML = `📊 Download Styled Excel<div style="font-size: 0.7rem; font-weight: 400; opacity: 0.8; margin-top: 2px;">${statusData.output_xlsx}</div>`;
+                    btnDlCsv.innerHTML = `📄 Download CSV<div style="font-size: 0.7rem; font-weight: 400; opacity: 0.8; margin-top: 2px;">${statusData.output_csv}</div>`;
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
         // Start fetching files on load
         fetchLocalPDFs();
         // Check if there is already extracted preview data to show
         loadTablePreview();
+        // Set dynamic download button filenames
+        updateDownloadButtons();
     </script>
 </body>
 </html>

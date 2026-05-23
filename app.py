@@ -22,11 +22,17 @@ app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50MB limit
 ui_logs = []
 logs_lock = threading.Lock()
 
+# Initial output names based on current folder contents
+pdf_files_init = sorted([f for f in os.listdir(project_dir) if f.lower().endswith('.pdf')])
+default_base = pdf_files_init[0].replace('.pdf', '') if pdf_files_init else "telecom_extracted_requirements"
+
 # Execution status dictionary to prevent frontend race conditions
 execution_status = {
     "status": "idle",
     "count": 0,
-    "error": None
+    "error": None,
+    "output_xlsx": f"{default_base}.xlsx",
+    "output_csv": f"{default_base}.csv"
 }
 
 class UILogRedirector:
@@ -84,23 +90,35 @@ def get_status():
 
 @app.route('/api/extract', methods=['POST'])
 def start_extraction():
-    # Set status to running
-    execution_status["status"] = "running"
-    execution_status["count"] = 0
-    execution_status["error"] = None
-
-    # Clear logs at start of extraction
-    with logs_lock:
-        ui_logs.clear()
-        ui_logs.append("Initialization extraction runner...")
-
     data = request.form
     selected_files = request.form.getlist('files')
     force_extract = request.form.get('force_extract', 'false').lower() == 'true'
     
     # Check if there is an uploaded file
     uploaded_file = request.files.get('file')
+
+    # Determine base output name from the first target file
+    first_fname = ""
+    if uploaded_file and uploaded_file.filename:
+        first_fname = uploaded_file.filename
+    elif selected_files:
+        first_fname = selected_files[0]
     
+    if first_fname:
+        base_name = first_fname.replace('.pdf', '')
+        execution_status["output_xlsx"] = f"{base_name}.xlsx"
+        execution_status["output_csv"] = f"{base_name}.csv"
+
+    # Set status to running
+    execution_status["status"] = "running"
+    execution_status["count"] = 0
+    execution_status["error"] = None
+    
+    # Clear logs at start of extraction
+    with logs_lock:
+        ui_logs.clear()
+        ui_logs.append("Initialization extraction runner...")
+
     def run_async_extraction():
         try:
             target_files = []
@@ -218,7 +236,8 @@ def start_extraction():
 
             # Generate final Excel and CSV output files
             print("Compiling final styled spreadsheet...")
-            extract_to_excel.generate_excel_table(anonymized_records, extract_to_excel.example_xlsx, extract_to_excel.output_xlsx)
+            output_xlsx_path = os.path.join(project_dir, execution_status["output_xlsx"])
+            extract_to_excel.generate_excel_table(anonymized_records, extract_to_excel.example_xlsx, output_xlsx_path)
             print("Finished writing output tables. Complete!")
             execution_status["status"] = "completed"
             execution_status["count"] = len(anonymized_records)
@@ -236,11 +255,12 @@ def start_extraction():
 @app.route('/api/preview-data', methods=['GET'])
 def preview_data():
     try:
-        if not os.path.exists(extract_to_excel.output_xlsx):
+        output_xlsx_path = os.path.join(project_dir, execution_status.get("output_xlsx", "telecom_extracted_requirements.xlsx"))
+        if not os.path.exists(output_xlsx_path):
             return jsonify({"success": False, "error": "No output spreadsheet generated yet."})
         
         # Read the generated spreadsheet rows
-        wb = load_workbook(extract_to_excel.output_xlsx, data_only=True)
+        wb = load_workbook(output_xlsx_path, data_only=True)
         ws = wb.active
         rows = []
         headers = ["ITB File Name", "Clause or\nDrawing No.", "Page#", "Item", "Requirement", "상세 내용"]
@@ -264,14 +284,15 @@ def preview_data():
 @app.route('/api/download', methods=['GET'])
 def download_file():
     file_format = request.args.get('format', 'xlsx').lower()
+    output_xlsx_name = execution_status.get("output_xlsx", "telecom_extracted_requirements.xlsx")
     if file_format == 'csv':
-        filepath = extract_to_excel.output_xlsx.replace('.xlsx', '.csv')
+        filepath = os.path.join(project_dir, output_xlsx_name.replace('.xlsx', '.csv'))
         mimetype = 'text/csv'
-        download_name = 'telecom_extracted_requirements.csv'
+        download_name = output_xlsx_name.replace('.xlsx', '.csv')
     else:
-        filepath = extract_to_excel.output_xlsx
+        filepath = os.path.join(project_dir, output_xlsx_name)
         mimetype = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-        download_name = 'telecom_extracted_requirements.xlsx'
+        download_name = output_xlsx_name
 
     if not os.path.exists(filepath):
         return jsonify({"success": False, "error": "Requested file does not exist. Run extraction first."}), 404
