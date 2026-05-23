@@ -8,7 +8,7 @@ from openpyxl.utils import get_column_letter
 
 # Define paths
 brain_dir = r"C:\Users\jezeh\.gemini\antigravity\brain\f214b7b2-f735-4f5a-84a2-666e18ac890f"
-workspace_dir = r"g:\My Drive\Project\CTGU"
+workspace_dir = r"g:\My Drive\Project\ITB Project"
 
 input_json = os.path.join(brain_dir, "telecom_extracted_requirements.json")
 output_json = os.path.join(brain_dir, "telecom_extracted_requirements.json")
@@ -169,8 +169,8 @@ for rec in updated_records:
     desc_clean = desc.replace("|", "&#124;").replace("\n", " ").strip()
     
     # We want filename to be a markdown link to the file if possible
-    # e.g., [filename](file:///g:/My Drive/Project/CTGU/filename)
-    filename_url = f"file:///g:/My%20Drive/Project/CTGU/{rec['Filename'].replace(' ', '%20')}"
+    # e.g., [filename](file:///g:/My Drive/Project/ITB Project/filename)
+    filename_url = f"file:///g:/My%20Drive/Project/ITB Project/{rec['Filename'].replace(' ', '%20')}"
     filename_link = f"[{rec['Filename']}]({filename_url})"
     
     row_str = f"| {rec['Item']} | {filename_link} | {rec['ITB Document number']} | {rec['clause or section']} | {rec['page number']} | {desc_clean} |"

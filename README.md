@@ -1,4 +1,4 @@
-# CTGU Telecom Specification Extraction Pipeline & Wiki
+# ITB Project Telecom Specification Extraction Pipeline & Wiki
 
 This project is a high-fidelity local-first pipeline designed to ingest complex, scanned, or corrupted engineering specification PDFs (Invitation to Bid/ITB documents), extract verbatim telecom-related clauses layout-aware, and catalog them into a searchable web dashboard for review, validation, and Technical Query (TQ) generation.
 
@@ -8,16 +8,16 @@ This project is a high-fidelity local-first pipeline designed to ingest complex,
 
 The project consists of three main components:
 
-1.  **[hifi_extractor/](file:///g:/My%20Drive/Project/CTGU/hifi_extractor/)**: A modular Python package implementing a tiered text extraction pipeline:
+1.  **[hifi_extractor/](file:///g:/My%20Drive/Project/ITB Project/hifi_extractor/)**: A modular Python package implementing a tiered text extraction pipeline:
     *   *Direct Parsing*: Uses PyMuPDF for fast digital text rendering.
     *   *OpenCV Image Processing*: Denoises, binarizes, and deskews scanned documents.
     *   *Tesseract OCR*: Extracts text from image-only pages or pages with garbled font encodings.
     *   *DBSCAN Margin Suppression*: Strips repetitive headers, footers, and page numbers.
     *   *Token Chunking*: Creates clean, semantic markdown boundaries for LLM ingestion.
-2.  **[telecom-wiki-app/](file:///g:/My%20Drive/Project/CTGU/telecom-wiki-app/)**: A dynamic local plant engineering dashboard:
+2.  **[telecom-wiki-app/](file:///g:/My%20Drive/Project/ITB Project/telecom-wiki-app/)**: A dynamic local plant engineering dashboard:
     *   *Flask Backend*: Handles project database onboarding, cataloging, and local API requests.
     *   *Static Dashboard*: A dark glassmorphic UI showcasing technical summaries, cables schedules, compliance statuses, and Technical Queries (TQs).
-3.  **[Makefile](file:///g:/My%20Drive/Project/CTGU/Makefile)**: Automation script to setup requirements, run diagnoses, execute tests, and batch extract files.
+3.  **[Makefile](file:///g:/My%20Drive/Project/ITB Project/Makefile)**: Automation script to setup requirements, run diagnoses, execute tests, and batch extract files.
 
 ---
 
@@ -63,7 +63,7 @@ python -m hifi_extractor extract "Part_B1_Technical_Specification_CO2_Urea_1_500
 ### Step 3: Run Onboarding Scanner
 Scan your PDF folder, automatically run OCR where necessary, and compile the subsystem requirements database:
 ```bash
-python telecom-wiki-app/scan_project.py --name "CTGU 150 TPD Urea" --dir "g:\My Drive\Project\CTGU"
+python telecom-wiki-app/scan_project.py --name "Urea Synthesis Plant" --dir "g:\My Drive\Project\ITB Project"
 ```
 This registers the project, creates static JS data fallbacks, and writes JSON files inside `telecom-wiki-app/projects/`.
 

@@ -49,8 +49,8 @@ def get_default_requirements():
                     with open(req_path, 'r', encoding='utf-8') as f_req:
                         return jsonify(json.load(f_req))
         
-        # Hard fallback to ctgu
-        fallback_path = os.path.join(PROJECTS_DIR, "ctgu.json")
+        # Hard fallback to project_co2_urea
+        fallback_path = os.path.join(PROJECTS_DIR, "project_co2_urea.json")
         if os.path.exists(fallback_path):
             with open(fallback_path, 'r', encoding='utf-8') as f_req:
                 return jsonify(json.load(f_req))

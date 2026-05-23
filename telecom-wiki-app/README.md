@@ -20,7 +20,7 @@ pip install PyMuPDF Flask
 To start the backend server and launch the wiki dashboard locally:
 1. Open terminal and navigate to the project directory:
    ```bash
-   cd "g:/My Drive/Project/CTGU/telecom-wiki-app"
+   cd "g:/My Drive/Project/ITB Project/telecom-wiki-app"
    ```
 2. Run the Flask application:
    ```bash
@@ -44,7 +44,7 @@ To upload this repository to your GitHub account:
    - Click **Create repository**.
 
 2. **Link this local repository to GitHub and push**:
-   Open your terminal in `g:/My Drive/Project/CTGU/telecom-wiki-app` and execute:
+   Open your terminal in `g:/My Drive/Project/ITB Project/telecom-wiki-app` and execute:
    ```bash
    # Add your GitHub remote URL (replace the URL below with your actual repo link)
    git remote add origin https://github.com/YOUR_USERNAME/telecom-itb-wiki-app.git
@@ -76,7 +76,7 @@ python scan_project.py --name "Project Name" --dir "C:/path/to/project/pdfs"
 ```
 *Example:*
 ```bash
-python scan_project.py --name "CTGU 150 TPD Urea" --dir "g:\My Drive\Project\CTGU"
+python scan_project.py --name "Urea Synthesis Plant" --dir "g:\My Drive\Project\ITB Project"
 ```
 This script:
 - Automatically routes pages through the **HiFi Extraction Pipeline (`hifi_extractor`)** if installed. This will classify each page and selectively run Tesseract OCR on scanned images (e.g. Part_B1) or force-OCR on corrupt font encodings (e.g. Part_B3) while keeping direct text parsing for clean native-text pages.
@@ -104,14 +104,14 @@ telecom-wiki-app/
 │   └── scan-new-bid.yml   # CI/CD action for automated PDF scans on Git push
 ├── projects/
 │   ├── projects.json      # Master index catalog of all onboarded projects
-│   ├── ctgu.json          # Extracted requirements database for CTGU project
+│   ├── project_co2_urea.json          # Extracted requirements database for ITB Project project
 │   └── *.json             # Requirements databases for future projects
 ├── static/
 │   ├── index.html         # Main wiki frontend interface
 │   ├── style.css          # Styling (custom dark glassmorphism)
 │   ├── app.js             # Core frontend controller (manages UI, TQs, and tabs)
 │   ├── data.js            # Default global data fallback for offline mode
-│   ├── data_ctgu.js       # Offline CTGU project database fallback
+│   ├── data_project_co2_urea.js       # Offline ITB Project project database fallback
 │   └── data_*.js          # Offline database fallbacks for future projects
 ├── .gitignore             # Screen out heavy PDF documents and caches from Git
 ├── app.py                 # Flask server backend
@@ -125,4 +125,4 @@ telecom-wiki-app/
 If you are on-site or in a restricted network area without internet or server access:
 1. Double-click the file `static/index.html` to open the app directly in any browser.
 2. The page loads using standard offline paths.
-3. The project selector allows switching between projects (e.g., `ctgu`, `ctgu_150_tpd_urea`). The frontend will automatically inject the corresponding `static/data_<project_id>.js` fallback file to load the respective specifications database locally.
+3. The project selector allows switching between projects (e.g., `project_co2_urea`, `project_urea`). The frontend will automatically inject the corresponding `static/data_<project_id>.js` fallback file to load the respective specifications database locally.

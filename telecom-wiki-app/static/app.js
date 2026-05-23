@@ -6,11 +6,11 @@ let serverOnline = false;
 let currentWorkflowStep = 1;
 let tqList = []; // TQ items
 let projectList = []; // Loaded projects catalog list
-let currentProjectId = 'ctgu'; // Active project ID
+let currentProjectId = 'project_co2_urea'; // Active project ID
 let projectTqs = {}; // Map to store active TQs for each project ID
 let activeCategory = 'ALL';
 
-// Default Initial TQs based on CTGU PDF Conflicts
+// Default Initial TQs based on ITB Project PDF Conflicts
 const DEFAULT_TQS = [
     {
         id: 1,
@@ -25,8 +25,8 @@ const DEFAULT_TQS = [
         subsystem: "UPS",
         docRef: "Part_A Page 37 / Part_B2 Page 234",
         clause: "Clause 5.5 / UPS Power",
-        description: "UPS battery backup duration is conflicting: Part-A page 37 specifies 3 hours backup for Carbon Capture plant (Simhadri), whereas page 42 specifies 2 hours backup for Pudimadaka C&I systems. Please clarify the required backup time for each site.",
-        proposal: "Bidder proposes to size the Ni-Cd battery bank for 3 hours backup duration for Simhadri and 2 hours for Pudimadaka as specified."
+        description: "UPS battery backup duration is conflicting: Part-A page 37 specifies 3 hours backup for Carbon Capture plant (Site Alpha), whereas page 42 specifies 2 hours backup for Site Beta C&I systems. Please clarify the required backup time for each site.",
+        proposal: "Bidder proposes to size the Ni-Cd battery bank for 3 hours backup duration for Site Alpha and 2 hours for Site Beta as specified."
     },
     {
         id: 3,
@@ -56,7 +56,7 @@ const DEFAULT_TQS = [
 
 // Initialize TQ list
 tqList = [...DEFAULT_TQS];
-projectTqs['ctgu'] = [...DEFAULT_TQS];
+projectTqs['project_co2_urea'] = [...DEFAULT_TQS];
 
 // Subsystem definitions with FontAwesome Icons and categories
 const SUBSYSTEM_META = {
@@ -166,14 +166,14 @@ async function loadProjectCatalog() {
         } catch (e) {
             console.warn("Catalog fetch failed, falling back offline.", e);
             projectList = typeof PROJECTS_CATALOG !== 'undefined' ? PROJECTS_CATALOG : [
-                { id: 'ctgu', name: "CTGU 150 TPD CO2 to Urea Project" },
-                { id: 'ctgu_150_tpd_urea', name: "CTGU 150 TPD Urea (Scanned)" }
+                { id: 'project_co2_urea', name: "CO2 to Urea Demonstration Plant Project" },
+                { id: 'project_urea', name: "Urea Synthesis Plant (Scanned)" }
             ];
         }
     } else {
         projectList = typeof PROJECTS_CATALOG !== 'undefined' ? PROJECTS_CATALOG : [
-            { id: 'ctgu', name: "CTGU 150 TPD CO2 to Urea Project" },
-            { id: 'ctgu_150_tpd_urea', name: "CTGU 150 TPD Urea (Scanned)" }
+            { id: 'project_co2_urea', name: "CO2 to Urea Demonstration Plant Project" },
+            { id: 'project_urea', name: "Urea Synthesis Plant (Scanned)" }
         ];
     }
     
@@ -218,7 +218,7 @@ async function loadProjectData(projectId) {
         tqList = [...projectTqs[projectId]];
     } else if (db && db.tqs && db.tqs.length > 0) {
         tqList = [...db.tqs];
-    } else if (projectId === 'ctgu') {
+    } else if (projectId === 'project_co2_urea') {
         tqList = [...DEFAULT_TQS];
     } else {
         tqList = [];
@@ -242,7 +242,7 @@ function loadOfflineProjectData(projectId) {
         const oldScript = document.getElementById('dynamicProjectData');
         if (oldScript) oldScript.remove();
         
-        if (projectId === 'ctgu') {
+        if (projectId === 'project_co2_urea') {
             db = REQUIREMENTS_DATA;
             resolve();
             return;

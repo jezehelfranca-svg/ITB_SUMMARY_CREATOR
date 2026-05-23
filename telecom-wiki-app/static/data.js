@@ -1,6 +1,6 @@
 // Default requirements database fallback
 const REQUIREMENTS_DATA = {
-  "project": "CTGU 150 TPD CO2 to Urea Project",
+  "project": "CO2 to Urea Demonstration Plant Project",
   "systems": {
     "CCTV": {
       "name": "Closed Circuit Television (CCTV) System",

@@ -1,6 +1,6 @@
-// Fallback requirements database for CTGU 150 TPD CO2 to Urea Project
-const REQUIREMENTS_DATA_CTGU = {
-  "project": "CTGU 150 TPD CO2 to Urea Project",
+// Fallback requirements database for CO2 to Urea Demonstration Plant Project
+const REQUIREMENTS_DATA_ITB Project = {
+  "project": "CO2 to Urea Demonstration Plant Project",
   "systems": {
     "CCTV": {
       "name": "Closed Circuit Television (CCTV) System",

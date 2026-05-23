@@ -32,8 +32,8 @@ def sync_projects():
                 json.dump(data, js_file, indent=2, ensure_ascii=False)
                 js_file.write(";\n")
             
-            # If it's the primary ctgu project, update data.js (which is the default offline load)
-            if project_id == 'ctgu':
+            # If it's the primary project_co2_urea project, update data.js (which is the default offline load)
+            if project_id == 'project_co2_urea':
                 default_js_path = os.path.join(STATIC_DIR, "data.js")
                 with open(default_js_path, 'w', encoding='utf-8') as default_js_file:
                     default_js_file.write("// Default requirements database fallback\n")

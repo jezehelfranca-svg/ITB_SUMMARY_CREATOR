@@ -172,7 +172,7 @@ SYSTEMS_TEMPLATE = {
         "rules": [],
         "highlights": [
             "Dual-redundant UPS (2 x 100%) with Nickel-Cadmium battery banks, ACDB, and cell boosters.",
-            "Backup duration: 3 hours for Simhadri (carbon capture plant) and 2 hours for Pudimadaka C&I systems.",
+            "Backup duration: 3 hours for Site Alpha (carbon capture plant) and 2 hours for Site Beta C&I systems.",
             "UPS alarm monitoring signals hooked up to Centralized DCS.",
             "DC fuse boxes of 63A rating provided."
         ]
@@ -270,8 +270,8 @@ def generate_tqs_and_challenges(project_name, scanned_matches):
             "subsystem": "UPS",
             "docRef": ups_clauses[0]["file"],
             "clause": f"Page {ups_clauses[0]['page']} & Page {ups_clauses[-1]['page']}",
-            "description": "UPS battery backup duration is conflicting: Part-A page 37 specifies 3 hours backup for Carbon Capture plant (Simhadri), whereas page 42 specifies 2 hours backup for Pudimadaka C&I systems. Please clarify the required duration at both sites.",
-            "proposal": "Bidder proposes 3 hours backup for Simhadri UPS and 2 hours backup for Pudimadaka UPS as specified in the respective sections."
+            "description": "UPS battery backup duration is conflicting: Part-A page 37 specifies 3 hours backup for Carbon Capture plant (Site Alpha), whereas page 42 specifies 2 hours backup for Site Beta C&I systems. Please clarify the required duration at both sites.",
+            "proposal": "Bidder proposes 3 hours backup for Site Alpha UPS and 2 hours backup for Site Beta UPS as specified in the respective sections."
         })
     else:
         tqs.append({

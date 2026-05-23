@@ -9,7 +9,7 @@ from openpyxl.utils import get_column_letter
 
 # Define paths
 brain_dir = r"C:\Users\jezeh\.gemini\antigravity\brain\f214b7b2-f735-4f5a-84a2-666e18ac890f"
-workspace_dir = r"g:\My Drive\Project\CTGU"
+workspace_dir = r"g:\My Drive\Project\ITB Project"
 
 input_json = os.path.join(brain_dir, "telecom_extracted_requirements.json")
 output_json = os.path.join(brain_dir, "telecom_extracted_requirements.json")
@@ -34,7 +34,7 @@ new_records = [
     },
     {
         "ITB File Name": "Part_A_Technical_Specification_150_TPD_CO2_To_Urea.pdf",
-        "Clause or Drawing No.": "F. TERMINAL POINTS / Table.1 / Location: Simhadri / S.No.11",
+        "Clause or Drawing No.": "F. TERMINAL POINTS / Table.1 / Location: Site Alpha / S.No.11",
         "Page#": "9",
         "Item": "Security/CISF Control Room distance",
         "Requirement": "Distance of CO2 Capture Plant from nearby Security/CISF Control Room '≥3000 meter",
@@ -42,7 +42,7 @@ new_records = [
     },
     {
         "ITB File Name": "Part_A_Technical_Specification_150_TPD_CO2_To_Urea.pdf",
-        "Clause or Drawing No.": "F. TERMINAL POINTS / Location: Pudimadaka / S.No.7",
+        "Clause or Drawing No.": "F. TERMINAL POINTS / Location: Site Beta / S.No.7",
         "Page#": "10",
         "Item": "Security/CISF Control Room distance",
         "Requirement": "Distance of Urea Plant B/L from nearby Security/CISF Control Room. '1000 meter",
@@ -94,15 +94,15 @@ new_records = [
         "Page#": "37",
         "Item": "DCS/PLC/Instrumentation Redundant UPS",
         "Requirement": "240V, 10kVA AC (Minimum) dual redundant with bypass UPS system (2 nos 1X100%) with Nickel cadmium battery, ACDB, cell booster for DCS/PLC/Instrumentation loads including spare feeders. Battery backup time of 3 hours.",
-        "상세 내용": "Dual redundant 10kVA UPS system with Ni-Cd battery bank providing 3 hours backup for DCS/PLC and instrumentation loads at Simhadri CO2 Capture Block."
+        "상세 내용": "Dual redundant 10kVA UPS system with Ni-Cd battery bank providing 3 hours backup for DCS/PLC and instrumentation loads at Site Alpha CO2 Capture Block."
     },
     {
         "ITB File Name": "Part_A_Technical_Specification_150_TPD_CO2_To_Urea.pdf",
         "Clause or Drawing No.": "C. Technical Specification – Control & Instrumentation / 8. CONTROL & INSTRUMENTATION / 1 Hierarchy of Documents & Overview / Clause 3",
         "Page#": "38",
         "Item": "Remote Monitoring & Historian",
-        "Requirement": "The bidder shall provide remote monitoring (read-only data flow) for the CO2 capture plant (located at Simhadri) at Pudimadaka. The Pudimadaka standalone monitoring system shall be non-control, with no interface to plant control systems, and will follow cybersecurity-driven network isolation with secure, standardized communication (e.g., OPC) to ensure reliable data monitoring. The system shall include historian with a minimum storage capacity of two months.",
-        "상세 내용": "Establish a read-only remote monitoring interface from Simhadri to Pudimadaka using OPC communication, including cybersecurity network isolation and a historian with minimum 2 months storage."
+        "Requirement": "The bidder shall provide remote monitoring (read-only data flow) for the CO2 capture plant (located at Site Alpha) at Site Beta. The Site Beta standalone monitoring system shall be non-control, with no interface to plant control systems, and will follow cybersecurity-driven network isolation with secure, standardized communication (e.g., OPC) to ensure reliable data monitoring. The system shall include historian with a minimum storage capacity of two months.",
+        "상세 내용": "Establish a read-only remote monitoring interface from Site Alpha to Site Beta using OPC communication, including cybersecurity network isolation and a historian with minimum 2 months storage."
     },
     {
         "ITB File Name": "Part_A_Technical_Specification_150_TPD_CO2_To_Urea.pdf",
@@ -332,17 +332,17 @@ new_records = [
         "ITB File Name": "Part_A_Technical_Specification_150_TPD_CO2_To_Urea.pdf",
         "Clause or Drawing No.": "Technical Specifications: Part-A / Section M: Civil / 5 Buildings & Structures / Item (iii)",
         "Page#": "47",
-        "Item": "Control Room Civil Design - Simhadri",
+        "Item": "Control Room Civil Design - Site Alpha",
         "Requirement": "Electrical cum Control Room for Carbon capture plant at Simadhari: A RCC / pre-engineered structural steel Building (25m X 12m) tentative shall be provided. The building shall be covered from all sides. The Electrical Room shall accommodate, LT PMCC Panels, Dry Type Transformer (if applicable), VFD Transformers (if applicable), 220V DCFB, LDB, WDB. and UPS, UPS DCDB, UPS battery and operator cabin etc. as per functional requirement. However, final size of Switchgear room, Control room, individual room, partition, doors, windows, rolling shutter etc shall be finalized at the stage of detail engineering with the approval of NTPC. Control room, meeting room, office space with toilet, pantry, staircase etc., shall be provided with sufficient lighting, ceiling / wall mounted fans, office furniture (tables, chairs etc of reputed make) etc. Individual control room, meeting room, office space shall be able to house 5-8 people for regular operational requirement. Control Room shall be Air conditioned. The control shall accommodate all the equipment as mentioned in Electrical and C&I chapter. The firefighting system shall be provided as per norms.",
-        "상세 내용": "Tentative 25x12m air-conditioned building at Simhadri to house C&I and electrical systems, including UPS systems, batteries, and the operator cabin."
+        "상세 내용": "Tentative 25x12m air-conditioned building at Site Alpha to house C&I and electrical systems, including UPS systems, batteries, and the operator cabin."
     },
     {
         "ITB File Name": "Part_A_Technical_Specification_150_TPD_CO2_To_Urea.pdf",
         "Clause or Drawing No.": "Technical Specifications: Part-A / Section M: Civil / 5 Buildings & Structures / Item (iv)",
         "Page#": "47",
-        "Item": "Control Room Civil Design - Pudimadaka",
+        "Item": "Control Room Civil Design - Site Beta",
         "Requirement": "Electrical cum Control Room for Urea Plant at Pudimadka shall be as mentioned in technical Specification (Part-B). Bidder shall be free to locate civil structures including control room in a manner to avoid blast proof constructions. However, compliance of OISD and other relevant statutory and mandatory requirements shall be ensured.",
-        "상세 내용": "Pudimadaka Control Room civil design specification, with layout flexibility to avoid blast-proof construction while maintaining OISD compliance."
+        "상세 내용": "Site Beta Control Room civil design specification, with layout flexibility to avoid blast-proof construction while maintaining OISD compliance."
     }
 ]
 
@@ -491,7 +491,7 @@ for rec in new_records:
     req = rec["Requirement"].replace("|", "&#124;").replace("\n", " ").strip()
     note = rec["상세 내용"].replace("|", "&#124;").replace("\n", " ").strip()
     
-    filename_url = f"file:///g:/My%20Drive/Project/CTGU/{rec['ITB File Name'].replace(' ', '%20')}"
+    filename_url = f"file:///g:/My%20Drive/Project/ITB Project/{rec['ITB File Name'].replace(' ', '%20')}"
     filename_link = f"[{rec['ITB File Name']}]({filename_url})"
     
     row_str = f"| {filename_link} | {rec['Clause or Drawing No.']} | {rec['Page#']} | {rec['Item']} | {req} | {note} |"

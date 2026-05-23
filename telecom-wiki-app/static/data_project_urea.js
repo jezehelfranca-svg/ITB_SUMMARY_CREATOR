@@ -1,5 +1,6 @@
-{
-  "project": "CTGU 150 TPD Urea",
+// Fallback requirements database for Urea Synthesis Plant
+const REQUIREMENTS_DATA_ITB Project_150_TPD_UREA = {
+  "project": "Urea Synthesis Plant",
   "systems": {
     "DCS": {
       "name": "Distributed Control System (DCS)",
@@ -8865,7 +8866,7 @@
           "file": "Part_A_Technical_Specification_150_TPD_CO2_To_Urea.pdf",
           "page": "4",
           "matched": "battery",
-          "context": "c) CO2 parameters at the battery limit of NTPC Simhadri and NTPC Pudimadaka are as"
+          "context": "c) CO2 parameters at the battery limit of NTPC Site Alpha and NTPC Site Beta are as"
         },
         {
           "file": "Part_A_Technical_Specification_150_TPD_CO2_To_Urea.pdf",
@@ -10508,7 +10509,7 @@
       ],
       "highlights": [
         "Dual-redundant UPS (2 x 100%) with Nickel-Cadmium battery banks, ACDB, and cell boosters.",
-        "Backup duration: 3 hours for Simhadri (carbon capture plant) and 2 hours for Pudimadaka C&I systems.",
+        "Backup duration: 3 hours for Site Alpha (carbon capture plant) and 2 hours for Site Beta C&I systems.",
         "UPS alarm monitoring signals hooked up to Centralized DCS.",
         "DC fuse boxes of 63A rating provided."
       ]
@@ -10558,8 +10559,8 @@
       "subsystem": "UPS",
       "docRef": "Part_A_Technical_Specification_150_TPD_CO2_To_Urea.pdf",
       "clause": "Page 37 & Page 184",
-      "description": "UPS battery backup duration is conflicting: Part-A page 37 specifies 3 hours backup for Carbon Capture plant (Simhadri), whereas page 42 specifies 2 hours backup for Pudimadaka C&I systems. Please clarify the required duration at both sites.",
-      "proposal": "Bidder proposes 3 hours backup for Simhadri UPS and 2 hours backup for Pudimadaka UPS as specified in the respective sections."
+      "description": "UPS battery backup duration is conflicting: Part-A page 37 specifies 3 hours backup for Carbon Capture plant (Site Alpha), whereas page 42 specifies 2 hours backup for Site Beta C&I systems. Please clarify the required duration at both sites.",
+      "proposal": "Bidder proposes 3 hours backup for Site Alpha UPS and 2 hours backup for Site Beta UPS as specified in the respective sections."
     },
     {
       "id": 3,
@@ -10629,4 +10630,4 @@
       "desc": "Export structured wiki data to the master database, updating system architectures, cable schedules, and bill of materials."
     }
   ]
-}
+};

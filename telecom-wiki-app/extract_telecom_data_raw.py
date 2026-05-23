@@ -5,7 +5,7 @@ import json
 import fitz  # PyMuPDF
 
 # Define the PDF directory
-pdf_dir = 'g:/My Drive/Project/CTGU'
+pdf_dir = 'g:/My Drive/Project/ITB Project'
 
 # Define output paths
 output_csv = 'C:/Users/jezeh/.gemini/antigravity/brain/f214b7b2-f735-4f5a-84a2-666e18ac890f/telecom_extracted_requirements_raw.csv'

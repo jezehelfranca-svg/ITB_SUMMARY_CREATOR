@@ -1,5 +1,6 @@
-{
-  "project": "Saudi Petro Rabigh BOTB Project",
+// Fallback requirements database for Petrochemical Plant Expansion Project
+const REQUIREMENTS_DATA_PROJECT_PETROCHEMICAL = {
+  "project": "Petrochemical Plant Expansion Project",
   "systems": {
     "DCS": {
       "name": "Distributed Control System (DCS)",
@@ -302,7 +303,7 @@
       "rules": [],
       "highlights": [
         "Dual-redundant UPS (2 x 100%) with Nickel-Cadmium battery banks, ACDB, and cell boosters.",
-        "Backup duration: 3 hours for Simhadri (carbon capture plant) and 2 hours for Pudimadaka C&I systems.",
+        "Backup duration: 3 hours for Site Alpha (carbon capture plant) and 2 hours for Site Beta C&I systems.",
         "UPS alarm monitoring signals hooked up to Centralized DCS.",
         "DC fuse boxes of 63A rating provided."
       ]
@@ -384,4 +385,4 @@
       "desc": "Export structured wiki data to the master database, updating system architectures, cable schedules, and bill of materials."
     }
   ]
-}
+};
