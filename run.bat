@@ -1,26 +1,22 @@
 @echo off
-title Telecom Specification Extraction Tool
+title Telecom Specification Extraction Engine
 echo ========================================================
-echo Starting Telecom Specification Extraction Tool...
+echo Starting Standalone Telecom Specification Extractor...
 echo ========================================================
 
-:: Ensure Tesseract-OCR is in the PATH environment for Tesseract executions
+:: Ensure Tesseract-OCR is in the PATH environment
 echo Checking Tesseract-OCR PATH configuration...
 set "PATH=C:\Program Files\Tesseract-OCR;%PATH%"
 
-echo Running extraction script...
-python extract_to_excel.py %*
+echo Launching default web browser at http://localhost:5000...
+start "" "http://localhost:5000"
+
+echo Starting local web server...
+python app.py
 
 if %ERRORLEVEL% neq 0 (
     echo.
-    echo [ERROR] The extraction script failed to execute.
+    echo [ERROR] Flask server failed to start or crashed.
     pause
     exit /b %ERRORLEVEL%
 )
-
-echo.
-echo ========================================================
-echo Extraction Completed Successfully!
-echo Output saved to: telecom_extracted_requirements.xlsx
-echo ========================================================
-pause

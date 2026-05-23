@@ -4,7 +4,7 @@ PYTHON = python
 PDF_DIR = .
 OUTPUT_DIR = output_chunks
 
-.PHONY: help install diagnose extract test batch run-extract
+.PHONY: help install diagnose extract test batch run-extract run-ui
 
 help:
 	@echo "HiFi PDF Extraction Pipeline Automation"
@@ -41,4 +41,7 @@ batch:
 
 run-extract:
 	$(PYTHON) extract_to_excel.py
+
+run-ui:
+	$(PYTHON) app.py
 
