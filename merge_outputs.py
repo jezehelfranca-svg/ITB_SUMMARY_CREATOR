@@ -28,6 +28,7 @@ import argparse
 def main():
     parser = argparse.ArgumentParser(description="Merge extracted specification files")
     parser.add_argument("--bypass-filtering", action="store_true", help="Bypass all false-positive filtering during merge")
+    parser.add_argument("--no-filter", action="store_true", help="Bypass all keyword and false-positive filtering during merge")
     args = parser.parse_args()
 
     # Reload config file dynamic changes
@@ -67,7 +68,7 @@ def main():
                 detail = row_vals[5] or ""
                 
                 # Skip if it is a false positive
-                if extract_to_excel.is_false_positive(requirement, bypass=args.bypass_filtering):
+                if not args.no_filter and extract_to_excel.is_false_positive(requirement, bypass=args.bypass_filtering):
                     filtered_count += 1
                     continue
                     

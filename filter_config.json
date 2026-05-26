@@ -1,5 +1,6 @@
 {
   "bypass_filtering": false,
+  "no_filter": false,
   "keywords": [
     "\\bcctv\\b",
     "\\bcamera[s]?\\b",

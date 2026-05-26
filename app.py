@@ -199,6 +199,7 @@ def start_extraction():
     enable_ai = request.form.get('enable_ai', 'false').lower() == 'true'
     api_key = request.form.get('api_key', '').strip()
     bypass_filtering = request.form.get('bypass_filtering', 'false').lower() == 'true'
+    no_filter = request.form.get('no_filter', 'false').lower() == 'true'
     
     # Check if there is an uploaded file
     uploaded_file = request.files.get('file')
@@ -260,7 +261,7 @@ def start_extraction():
                 
                 if not force_extract and cached_items:
                     print(f"Found {len(cached_items)} cached records in database for {fname}. Loading instantly...")
-                    filtered_cached = [r for r in cached_items if not extract_to_excel.is_false_positive(r.get("Requirement", ""), bypass=bypass_filtering)]
+                    filtered_cached = [r for r in cached_items if no_filter or not extract_to_excel.is_false_positive(r.get("Requirement", ""), bypass=bypass_filtering)]
                     all_records.extend(filtered_cached)
                 else:
                     # Run dynamic page-by-page parser
@@ -299,7 +300,14 @@ def start_extraction():
                             para = para.strip().replace('\n', ' ')
                             para = re.sub(r'\s+', ' ', para)
                             
-                            if len(para) > 15 and extract_to_excel.is_telecom_clause(para) and not extract_to_excel.is_false_positive(para, bypass=bypass_filtering):
+                            is_relevant = False
+                            if len(para) > 15:
+                                if no_filter:
+                                    is_relevant = True
+                                else:
+                                    is_relevant = extract_to_excel.is_telecom_clause(para) and not extract_to_excel.is_false_positive(para, bypass=bypass_filtering)
+                            
+                            if is_relevant:
                                 p_map = file_mapping.get(str(page_num), {})
                                 doc_no = p_map.get("doc_no", "")
                                 title = p_map.get("title", "")

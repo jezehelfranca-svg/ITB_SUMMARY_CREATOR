@@ -87,9 +87,10 @@ KEYWORDS = list(DEFAULT_KEYWORDS)
 FALSE_POSITIVE_PATTERNS = list(DEFAULT_FP_PATTERNS)
 CATEGORY_ORDER = dict(DEFAULT_CATEGORY_ORDER)
 BYPASS_FILTERING = False
+NO_FILTER = False
 
 def load_filter_config():
-    global KEYWORDS, FALSE_POSITIVE_PATTERNS, CATEGORY_ORDER, BYPASS_FILTERING
+    global KEYWORDS, FALSE_POSITIVE_PATTERNS, CATEGORY_ORDER, BYPASS_FILTERING, NO_FILTER
     if os.path.exists(config_file):
         try:
             with open(config_file, "r", encoding="utf-8") as f:
@@ -99,6 +100,7 @@ def load_filter_config():
             FALSE_POSITIVE_PATTERNS = config_data.get("false_positive_patterns", DEFAULT_FP_PATTERNS)
             CATEGORY_ORDER = config_data.get("category_order", DEFAULT_CATEGORY_ORDER)
             BYPASS_FILTERING = config_data.get("bypass_filtering", False)
+            NO_FILTER = config_data.get("no_filter", False)
             
             print("Successfully loaded filter configuration from filter_config.json.")
         except Exception as e:
@@ -107,12 +109,14 @@ def load_filter_config():
             FALSE_POSITIVE_PATTERNS = list(DEFAULT_FP_PATTERNS)
             CATEGORY_ORDER = dict(DEFAULT_CATEGORY_ORDER)
             BYPASS_FILTERING = False
+            NO_FILTER = False
     else:
         print("filter_config.json not found. Using default configurations.")
         KEYWORDS = list(DEFAULT_KEYWORDS)
         FALSE_POSITIVE_PATTERNS = list(DEFAULT_FP_PATTERNS)
         CATEGORY_ORDER = dict(DEFAULT_CATEGORY_ORDER)
         BYPASS_FILTERING = False
+        NO_FILTER = False
 
 # Load config immediately on import
 load_filter_config()
@@ -343,7 +347,12 @@ def generate_excel_table(records, template_path, output_path):
             writer.writerow(row_data)
     print(f"CSV version successfully saved to {output_csv}.")
 
-def run_extraction_suite(bypass_filtering=None):
+def run_extraction_suite(bypass_filtering=None, no_filter=None):
+    if no_filter is None:
+        no_filter = NO_FILTER
+    if bypass_filtering is None:
+        bypass_filtering = BYPASS_FILTERING
+
     pdf_files = sorted([f for f in os.listdir(project_dir) if f.lower().endswith('.pdf')])
     print(f"Found {len(pdf_files)} PDF documents in project directory.")
     
@@ -390,7 +399,14 @@ def run_extraction_suite(bypass_filtering=None):
                 para = para.strip().replace('\n', ' ')
                 para = re.sub(r'\s+', ' ', para)
                 
-                if len(para) > 15 and is_telecom_clause(para) and not is_false_positive(para, bypass=bypass_filtering):
+                is_relevant = False
+                if len(para) > 15:
+                    if no_filter:
+                        is_relevant = True
+                    else:
+                        is_relevant = is_telecom_clause(para) and not is_false_positive(para, bypass=bypass_filtering)
+                
+                if is_relevant:
                     # Get mapping lookup metadata
                     p_map = file_mapping.get(str(page_num), {})
                     doc_no = p_map.get("doc_no", "")
@@ -434,6 +450,7 @@ def main():
     parser = argparse.ArgumentParser(description="Standalone Telecom Specification Extraction Tool")
     parser.add_argument("--force-extract", action="store_true", help="Force dynamic PDF extraction rather than using database cache")
     parser.add_argument("--bypass-filtering", action="store_true", help="Bypass all false-positive filtering")
+    parser.add_argument("--no-filter", action="store_true", help="Do not filter any words; extract all paragraphs")
     args = parser.parse_args()
 
     # Default to loading pre-extracted database if it exists
@@ -453,15 +470,23 @@ def main():
                     clean_r[k] = str(v)
                 else:
                     clean_r[k] = anonymize(v)
-            # Filter false positives from loaded records
-            if not is_false_positive(clean_r.get("Requirement", ""), bypass=args.bypass_filtering):
+            
+            req_text = clean_r.get("Requirement", "")
+            is_relevant = False
+            if len(req_text) > 15:
+                if args.no_filter:
+                    is_relevant = True
+                else:
+                    is_relevant = is_telecom_clause(req_text) and not is_false_positive(req_text, bypass=args.bypass_filtering)
+            
+            if is_relevant:
                 anonymized_records.append(clean_r)
         
         sorted_records = sort_and_arrange_records(anonymized_records)
         generate_excel_table(sorted_records, example_xlsx, output_xlsx)
     else:
         print("Starting dynamic offline extraction from PDF documents (this may take a few minutes)...")
-        run_extraction_suite(bypass_filtering=args.bypass_filtering)
+        run_extraction_suite(bypass_filtering=args.bypass_filtering, no_filter=args.no_filter)
 
 if __name__ == "__main__":
     if hasattr(sys.stdout, "reconfigure"):

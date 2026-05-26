@@ -649,6 +649,17 @@
                     </label>
                 </div>
 
+                <div class="toggle-container">
+                    <div>
+                        <div style="font-weight: 500;">No Filter (Extract All Content)</div>
+                        <div style="font-size: 0.75rem; color: var(--text-muted);">Extract every paragraph, bypassing all keyword and false-positive checks</div>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="toggle-no-filter">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
                 <div class="toggle-container" id="api-key-container" style="display: none; flex-direction: column; align-items: flex-start; gap: 0.5rem;">
                     <div style="font-weight: 500; font-size: 0.85rem;">Gemini API Key</div>
                     <input type="password" id="input-api-key" placeholder="Enter API Key" style="width: 100%; background: rgba(255,255,255,0.03); border: 1px solid var(--glass-border); border-radius: 6px; padding: 0.4rem 0.75rem; color: var(--text-main); font-family: inherit; font-size: 0.85rem;">
@@ -747,6 +758,7 @@
 const toggleForce = document.getElementById('toggle-force');
         const toggleAi = document.getElementById('toggle-ai');
         const toggleBypass = document.getElementById('toggle-bypass');
+        const toggleNoFilter = document.getElementById('toggle-no-filter');
         const apiKeyContainer = document.getElementById('api-key-container');
         const inputApiKey = document.getElementById('input-api-key');
         const btnRun = document.getElementById('btn-run');
@@ -773,6 +785,16 @@ const toggleForce = document.getElementById('toggle-force');
                 apiKeyContainer.style.display = 'flex';
             } else {
                 apiKeyContainer.style.display = 'none';
+            }
+        });
+
+        // Dynamic toggle coupling
+        toggleNoFilter.addEventListener('change', () => {
+            if (toggleNoFilter.checked) {
+                toggleBypass.checked = true;
+                toggleBypass.disabled = true;
+            } else {
+                toggleBypass.disabled = false;
             }
         });
 
@@ -913,6 +935,7 @@ const toggleForce = document.getElementById('toggle-force');
             formData.append('enable_ai', toggleAi.checked);
             formData.append('api_key', inputApiKey.value);
             formData.append('bypass_filtering', toggleBypass.checked);
+            formData.append('no_filter', toggleNoFilter.checked);
 
             try {
                 const res = await fetch('/api/extract', {
