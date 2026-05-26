@@ -34,8 +34,11 @@ if os.path.exists(mapping_file):
 else:
     page_mappings = {}
 
-# Telecom and Security Keywords
-KEYWORDS = [
+# Path to filter config
+config_file = os.path.join(project_dir, "filter_config.json")
+
+# Default hardcoded fallbacks
+DEFAULT_KEYWORDS = [
     r"\bcctv\b", r"\bcamera[s]?\b", r"\bnvr\b", r"\bvms\b", r"\bsurveillance\b",
     r"\bpaga\b", r"\bpa/ga\b", r"\bpublic\s+address\b", r"\bgeneral\s+alarm\b", r"\bloudspeaker[s]?\b", r"\bacoustic\s+hood\b",
     r"\btelephone[s]?\b", r"\btelephony\b", r"\bintercom\b", r"\bpabx\b", r"\bhandset[s]?\b", r"\bhooter\b", r"\bflasher\b",
@@ -44,7 +47,85 @@ KEYWORDS = [
     r"\baccess\s+control\b", r"\bacs\b", r"\bcard\s+reader[s]?\b",
     r"\btelecom\b", r"\btelecommunication[s]?\b"
 ]
+
+DEFAULT_FP_PATTERNS = [
+    r"\bvalve material specification\b",
+    r"\bpiping material specification\b",
+    r"\bpms\s*&\s*vms\b",
+    r"\bwelding specification\b",
+    r"\bbolt tension\b",
+    r"\bbolt torque\b",
+    r"\bflange joint\b",
+    r"\bmobile toilet\b",
+    r"\beffluent summary\b",
+    r"\bwater balance\b",
+    r"\bbarc guideline\b",
+    r"\bradiography source pit\b",
+    r"\bfilm processing\b",
+    r"\bclash checking\b",
+    r"\b3-d modelling\b",
+    r"\bhutments\b",
+    r"\blabour colony\b",
+    r"\bcanteen facility\b",
+    r"\boffice facility\b"
+]
+
+DEFAULT_CATEGORY_ORDER = {
+    "CCTV Surveillance System": 1,
+    "Access Control System (ACS)": 2,
+    "Public Address & General Alarm (PAGA) System": 3,
+    "Telephone Intercom System": 4,
+    "OT Network & Cybersecurity": 5,
+    "Structured Cabling & FOC": 6,
+    "UPS & DC Power Systems": 7,
+    "Control Room Civil / Environmental": 8,
+    "Telecom Specifications": 9
+}
+
+# Dynamic configurations loaded on start
+KEYWORDS = list(DEFAULT_KEYWORDS)
+FALSE_POSITIVE_PATTERNS = list(DEFAULT_FP_PATTERNS)
+CATEGORY_ORDER = dict(DEFAULT_CATEGORY_ORDER)
+BYPASS_FILTERING = False
+
+def load_filter_config():
+    global KEYWORDS, FALSE_POSITIVE_PATTERNS, CATEGORY_ORDER, BYPASS_FILTERING
+    if os.path.exists(config_file):
+        try:
+            with open(config_file, "r", encoding="utf-8") as f:
+                config_data = json.load(f)
+            
+            KEYWORDS = config_data.get("keywords", DEFAULT_KEYWORDS)
+            FALSE_POSITIVE_PATTERNS = config_data.get("false_positive_patterns", DEFAULT_FP_PATTERNS)
+            CATEGORY_ORDER = config_data.get("category_order", DEFAULT_CATEGORY_ORDER)
+            BYPASS_FILTERING = config_data.get("bypass_filtering", False)
+            
+            print("Successfully loaded filter configuration from filter_config.json.")
+        except Exception as e:
+            print(f"[WARNING] Error reading filter_config.json: {e}. Using defaults.")
+            KEYWORDS = list(DEFAULT_KEYWORDS)
+            FALSE_POSITIVE_PATTERNS = list(DEFAULT_FP_PATTERNS)
+            CATEGORY_ORDER = dict(DEFAULT_CATEGORY_ORDER)
+            BYPASS_FILTERING = False
+    else:
+        print("filter_config.json not found. Using default configurations.")
+        KEYWORDS = list(DEFAULT_KEYWORDS)
+        FALSE_POSITIVE_PATTERNS = list(DEFAULT_FP_PATTERNS)
+        CATEGORY_ORDER = dict(DEFAULT_CATEGORY_ORDER)
+        BYPASS_FILTERING = False
+
+# Load config immediately on import
+load_filter_config()
+
 COMPILED_KWS = [re.compile(kw, re.IGNORECASE) for kw in KEYWORDS]
+COMPILED_FP_PATS = [re.compile(pat, re.IGNORECASE) for pat in FALSE_POSITIVE_PATTERNS]
+
+def reload_config_and_compile():
+    """Allows on-demand reloading from configuration file (e.g. for Flask runs)"""
+    global COMPILED_KWS, COMPILED_FP_PATS
+    load_filter_config()
+    COMPILED_KWS = [re.compile(kw, re.IGNORECASE) for kw in KEYWORDS]
+    COMPILED_FP_PATS = [re.compile(pat, re.IGNORECASE) for pat in FALSE_POSITIVE_PATTERNS]
 
 def is_telecom_clause(text):
     for pat in COMPILED_KWS:
@@ -69,42 +150,14 @@ def anonymize(text):
     return text
 
 # Group keyword classification for generating short Item labels
-CATEGORY_ORDER = {
-    "CCTV Surveillance System": 1,
-    "Access Control System (ACS)": 2,
-    "Public Address & General Alarm (PAGA) System": 3,
-    "Telephone Intercom System": 4,
-    "OT Network & Cybersecurity": 5,
-    "Structured Cabling & FOC": 6,
-    "UPS & DC Power Systems": 7,
-    "Control Room Civil / Environmental": 8,
-    "Telecom Specifications": 9
-}
+# Category order is now loadable dynamically but we keep CATEGORY_ORDER globally visible
 
-FALSE_POSITIVE_PATTERNS = [
-    r"\bvalve material specification\b",
-    r"\bpiping material specification\b",
-    r"\bpms\s*&\s*vms\b",
-    r"\bwelding specification\b",
-    r"\bbolt tension\b",
-    r"\bbolt torque\b",
-    r"\bflange joint\b",
-    r"\bmobile toilet\b",
-    r"\beffluent summary\b",
-    r"\bwater balance\b",
-    r"\bbarc guideline\b",
-    r"\bradiography source pit\b",
-    r"\bfilm processing\b",
-    r"\bclash checking\b",
-    r"\b3-d modelling\b",
-    r"\bhutments\b",
-    r"\blabour colony\b",
-    r"\bcanteen facility\b",
-    r"\boffice facility\b"
-]
-COMPILED_FP_PATS = [re.compile(pat, re.IGNORECASE) for pat in FALSE_POSITIVE_PATTERNS]
-
-def is_false_positive(text):
+def is_false_positive(text, bypass=None):
+    if bypass is None:
+        bypass = BYPASS_FILTERING
+    if bypass:
+        return False
+        
     text_lower = text.lower()
     for pat in COMPILED_FP_PATS:
         if pat.search(text):
@@ -290,7 +343,7 @@ def generate_excel_table(records, template_path, output_path):
             writer.writerow(row_data)
     print(f"CSV version successfully saved to {output_csv}.")
 
-def run_extraction_suite():
+def run_extraction_suite(bypass_filtering=None):
     pdf_files = sorted([f for f in os.listdir(project_dir) if f.lower().endswith('.pdf')])
     print(f"Found {len(pdf_files)} PDF documents in project directory.")
     
@@ -337,7 +390,7 @@ def run_extraction_suite():
                 para = para.strip().replace('\n', ' ')
                 para = re.sub(r'\s+', ' ', para)
                 
-                if len(para) > 15 and is_telecom_clause(para) and not is_false_positive(para):
+                if len(para) > 15 and is_telecom_clause(para) and not is_false_positive(para, bypass=bypass_filtering):
                     # Get mapping lookup metadata
                     p_map = file_mapping.get(str(page_num), {})
                     doc_no = p_map.get("doc_no", "")
@@ -380,6 +433,7 @@ def run_extraction_suite():
 def main():
     parser = argparse.ArgumentParser(description="Standalone Telecom Specification Extraction Tool")
     parser.add_argument("--force-extract", action="store_true", help="Force dynamic PDF extraction rather than using database cache")
+    parser.add_argument("--bypass-filtering", action="store_true", help="Bypass all false-positive filtering")
     args = parser.parse_args()
 
     # Default to loading pre-extracted database if it exists
@@ -400,14 +454,14 @@ def main():
                 else:
                     clean_r[k] = anonymize(v)
             # Filter false positives from loaded records
-            if not is_false_positive(clean_r.get("Requirement", "")):
+            if not is_false_positive(clean_r.get("Requirement", ""), bypass=args.bypass_filtering):
                 anonymized_records.append(clean_r)
         
         sorted_records = sort_and_arrange_records(anonymized_records)
         generate_excel_table(sorted_records, example_xlsx, output_xlsx)
     else:
         print("Starting dynamic offline extraction from PDF documents (this may take a few minutes)...")
-        run_extraction_suite()
+        run_extraction_suite(bypass_filtering=args.bypass_filtering)
 
 if __name__ == "__main__":
     if hasattr(sys.stdout, "reconfigure"):

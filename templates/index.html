@@ -638,6 +638,17 @@
                     </label>
                 </div>
 
+                <div class="toggle-container">
+                    <div>
+                        <div style="font-weight: 500;">Bypass False-Positive Filter</div>
+                        <div style="font-size: 0.75rem; color: var(--text-muted);">Keep all keyword matches without exclusion</div>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="toggle-bypass">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
                 <div class="toggle-container" id="api-key-container" style="display: none; flex-direction: column; align-items: flex-start; gap: 0.5rem;">
                     <div style="font-weight: 500; font-size: 0.85rem;">Gemini API Key</div>
                     <input type="password" id="input-api-key" placeholder="Enter API Key" style="width: 100%; background: rgba(255,255,255,0.03); border: 1px solid var(--glass-border); border-radius: 6px; padding: 0.4rem 0.75rem; color: var(--text-main); font-family: inherit; font-size: 0.85rem;">
@@ -733,8 +744,9 @@
         const uploadZone = document.getElementById('upload-zone');
         const fileInput = document.getElementById('file-input');
         const uploadStatus = document.getElementById('upload-status');
-        const toggleForce = document.getElementById('toggle-force');
+const toggleForce = document.getElementById('toggle-force');
         const toggleAi = document.getElementById('toggle-ai');
+        const toggleBypass = document.getElementById('toggle-bypass');
         const apiKeyContainer = document.getElementById('api-key-container');
         const inputApiKey = document.getElementById('input-api-key');
         const btnRun = document.getElementById('btn-run');
@@ -900,6 +912,7 @@
             formData.append('force_extract', toggleForce.checked);
             formData.append('enable_ai', toggleAi.checked);
             formData.append('api_key', inputApiKey.value);
+            formData.append('bypass_filtering', toggleBypass.checked);
 
             try {
                 const res = await fetch('/api/extract', {
