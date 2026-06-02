@@ -421,6 +421,139 @@ def download_file():
         
     return send_file(filepath, mimetype=mimetype, as_attachment=True, download_name=download_name)
 
+@app.route('/diagram-maker')
+def diagram_maker():
+    return render_template('diagram_maker.html')
+
+@app.route('/api/diagrams', methods=['GET'])
+def list_diagrams():
+    try:
+        diagrams = []
+        # Scan root folder
+        for f in os.listdir(project_dir):
+            if f.lower().endswith('.mmd'):
+                diagrams.append({
+                    "name": f,
+                    "path": f,
+                    "location": "root"
+                })
+        # Scan subfolder CTGU-main/CTGU-main
+        subfolder = os.path.join(project_dir, "CTGU-main", "CTGU-main")
+        if os.path.exists(subfolder):
+            for f in os.listdir(subfolder):
+                if f.lower().endswith('.mmd'):
+                    diagrams.append({
+                        "name": f,
+                        "path": os.path.join("CTGU-main", "CTGU-main", f),
+                        "location": "subfolder"
+                    })
+        return jsonify({"success": True, "diagrams": diagrams})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
+@app.route('/api/diagrams/load', methods=['GET'])
+def load_diagram():
+    rel_path = request.args.get('path', '').strip()
+    if not rel_path or '..' in rel_path:
+        return jsonify({"success": False, "error": "Invalid diagram path."}), 400
+    
+    full_path = os.path.join(project_dir, rel_path)
+    if not os.path.exists(full_path) or not full_path.lower().endswith('.mmd'):
+        return jsonify({"success": False, "error": "File not found."}), 404
+        
+    try:
+        with open(full_path, "r", encoding="utf-8") as f:
+            code = f.read()
+        return jsonify({"success": True, "code": code})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
+@app.route('/api/diagrams/save', methods=['POST'])
+def save_diagram():
+    rel_path = request.form.get('path', '').strip()
+    code = request.form.get('code', '')
+    
+    if not rel_path or '..' in rel_path:
+        return jsonify({"success": False, "error": "Invalid diagram path."}), 400
+        
+    full_path = os.path.join(project_dir, rel_path)
+    if not full_path.lower().endswith('.mmd'):
+        return jsonify({"success": False, "error": "File must have .mmd extension."}), 400
+        
+    try:
+        os.makedirs(os.path.dirname(full_path), exist_ok=True)
+        with open(full_path, "w", encoding="utf-8") as f:
+            f.write(code)
+        print(f"Diagram saved successfully to {full_path}")
+        return jsonify({"success": True, "message": "Diagram saved successfully."})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
+@app.route('/api/diagrams/export-pdf', methods=['POST'])
+def export_diagram_pdf():
+    import base64
+    import zlib
+    import requests
+    
+    rel_path = request.form.get('path', '').strip()
+    code = request.form.get('code', '')
+    
+    if not rel_path or '..' in rel_path:
+        return jsonify({"success": False, "error": "Invalid diagram path."}), 400
+        
+    full_path = os.path.join(project_dir, rel_path)
+    if not full_path.lower().endswith('.mmd'):
+        return jsonify({"success": False, "error": "Invalid file format."}), 400
+        
+    pdf_path = full_path.replace('.mmd', '.pdf')
+    
+    try:
+        # Clean code to reduce URL size
+        cleaned_lines = []
+        for line in code.splitlines():
+            stripped = line.strip()
+            if stripped.startswith("%%") and not stripped.startswith("%%{"):
+                continue
+            if not stripped:
+                continue
+            cleaned_lines.append(stripped)
+        cleaned_code = "\n".join(cleaned_lines)
+        
+        # Prepare state JSON
+        state = {
+            "code": cleaned_code,
+            "mermaid": {"theme": "default"}
+        }
+        json_str = json.dumps(state, separators=(',', ':'))
+        
+        # Compress and base64 urlsafe encode
+        compressed = zlib.compress(json_str.encode('utf-8'), level=9)
+        encoded = base64.b64encode(compressed).decode('utf-8')
+        encoded_urlsafe = encoded.replace('+', '-').replace('/', '_').replace('=', '')
+        
+        # Call mermaid.ink
+        url = f"https://mermaid.ink/pdf/pako:{encoded_urlsafe}?fit&landscape&paper=a3"
+        print(f"Requesting A3 PDF export from: {url[:100]}...")
+        
+        headers = {"User-Agent": "Mozilla/5.0"}
+        r = requests.get(url, headers=headers, timeout=60)
+        
+        if r.status_code == 200:
+            with open(pdf_path, "wb") as f:
+                f.write(r.content)
+            print(f"Exported PDF saved to {pdf_path}")
+            return send_file(pdf_path, mimetype='application/pdf', as_attachment=True, download_name=os.path.basename(pdf_path))
+        else:
+            return jsonify({
+                "success": False, 
+                "error": f"Failed to generate PDF from mermaid.ink. Status code: {r.status_code}",
+                "detail": r.text[:200]
+            }), 500
+            
+    except Exception as e:
+        print(f"Error exporting PDF: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
 if __name__ == '__main__':
     print("Starting Flask web backend at http://localhost:5000...")
     app.run(host='127.0.0.1', port=5000, debug=False)

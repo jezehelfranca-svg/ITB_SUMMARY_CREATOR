@@ -63,3 +63,22 @@ To extract a page range from a specific document for inspection or verification:
 ```bash
 python -m hifi_extractor extract "Part_A_Technical_Specification_150_TPD_CO2_To_Urea.pdf" --pages 38-44 -o output.md
 ```
+
+---
+
+## 🏛️ Telecom Architecture & Block Diagram
+
+A highly detailed, production-grade overall block diagram has been generated in [CTGU_Overall_Telecom_Architecture_Detailed.mmd](file:///g:/My%20Drive/Project/CTGU/CTGU-main/CTGU-main/CTGU_Overall_Telecom_Architecture_Detailed.mmd). It reflects all the technical specification requirements (CCTV, PAGA, Telephone, Time Synchronization, OT Networks, and UPS Power) mapped across Purdue levels and site boundaries.
+
+### 📋 Architecture Completeness Checklist
+
+| Subsystem / Area | Specification Requirement | Implementation in Block Diagram |
+| :--- | :--- | :--- |
+| **Site Boundaries** | Remote read-only process viewing monitoring at Site Beta (isolated). | Read-only OPC Link from Site Alpha (OPC Server) to Site Beta (OPC Client / Remote Historian) through isolated firewalls. |
+| **CCTV Surveillance** | Min 20 cameras (12 PTZ, 8 Dome), STQC/MeitY certified, Ex d IP65, NVR RAID 60 days, Video Analytics Server. | `IPCAM_A` (1080p, Ex d, IR, STQC), `CCTV_SW_A` (Field switches), `CCTV_VMS_A` (NVR RAID min 60 days), `CCTV_ANA_A` (Analytics), `CCTV_CLIENT_A` linked to `LVS_A`. |
+| **PAGA / Plant Comm** | Redundant Central Exchange, Master call station, Ex d field call stations, beacons/sirens, N+1 UPS amplifier racks. | `PAGA_EX_A` (Redundant Exchange), `PAGA_MCS_A` (Master Station), `PAGA_AMP_A` (N+1 amplifiers), `PAGA_FCS_EX_A` (Ex d), beacons, and sirens. |
+| **Telephone System** | EPABX exchange (48V DC telephones), MDF-to-TJB demarcation, TDJB building distribution. | `TEL_EXCHANGE_A` (Owner EPABX), `MDF_A` (MDF Demarcation), `TJB_A` (Main JB), `TDJB_A` (Distribution JB), `RJ11_SOCKETS_A`. |
+| **Time Synchronization** | Redundant GPS Master Clock, outdoor lightning protected antenna, NTP/PTP, IRIG-B, 1PPS/10MHz outputs. | `GPS_MASTER_A` (Redundant clocks), `GPS_ANT_A` (Weatherproof/lightning protected), `TIME_NET_A` distributing to Core switches, controllers, CCTV, PAGA, and slave clocks. |
+| **OT Networks & Cyber** | IEC 62443 security zones, managed switches, HA pair firewalls, Jump Server (MFA/Recording), log retention for 180 days. | `FW_EXT_A`/`FW_INT_A` (HA Pairs), `DMZ_SW_A`, `Jump_A` (MFA/Session recording), `LogRelay_A`, `LogStore_A` (180 days retention). |
+| **UPS Power Systems** | Redundant UPS (2x100% 10kVA) with Ni-Cd battery bank and ACDB, 3-hour backup time at Site Alpha, status monitoring to DCS. | `UPS_SYS_A` (Redundant UPS + Ni-Cd batteries + ACDB), `UPS_MON_A` (Monitoring card) connecting hardwired/Modbus alarms to `DCS_CTRL_A`. |
+
