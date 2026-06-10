@@ -27,19 +27,31 @@ The project consists of the following components:
 *   **Tesseract OCR** (automated installation via `make install` using Windows Package Manager, or installed manually at `C:\Program Files\Tesseract-OCR`).
 
 ### 2. Setup
-Install all python dependencies:
+Create a project virtual environment and install all Python dependencies:
 ```bash
-make install
+python -m venv .venv
+.venv\Scripts\python -m pip install -r requirements.txt
 ```
 
-### 3. Run Standalone Extraction
-To generate the styled Excel spreadsheet (`telecom_extracted_requirements.xlsx`) and CSV file instantly using the pre-extracted, audited, and anonymized database cache, simply run:
+On Windows, `make install` also checks for Tesseract OCR and installs it with
+`winget` when needed.
+
+### 3. Run The Local Web App
+Start the extraction dashboard:
 ```bash
 run.bat
 ```
-or:
+Then open [http://localhost:5000](http://localhost:5000). The dashboard accepts
+local PDFs and drag-and-drop uploads, streams extraction progress, previews
+clauses, and downloads styled Excel or CSV output. Expand **Manual Filter
+Rules** under Config Options to edit inclusion keywords and false-positive
+exclusion patterns directly in the UI. Rules accept case-insensitive regular
+expressions, are validated before saving, and apply to the next extraction.
+
+### 4. Run Standalone Extraction
+To generate the styled Excel spreadsheet (`telecom_extracted_requirements.xlsx`) and CSV file instantly using the pre-extracted, audited, and anonymized database cache, simply run:
 ```bash
-make run-extract
+.venv\Scripts\python extract_to_excel.py
 ```
 
 If you want to force the tool to re-scan all PDF files in the directory page-by-page and extract requirements using the active OCR/processing pipeline, run:
@@ -47,6 +59,11 @@ If you want to force the tool to re-scan all PDF files in the directory page-by-
 python extract_to_excel.py --force-extract
 ```
 The dynamic pipeline automatically filters out and anonymizes project/site references at runtime.
+
+### 5. Run Tests
+```bash
+.venv\Scripts\python -m unittest discover -s tests -v
+```
 
 ---
 
