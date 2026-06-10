@@ -207,7 +207,7 @@
 
         .upload-zone:hover, .upload-zone.dragging {
             border-color: var(--accent-primary);
-            background: rgba(168, 85, 2 purple, 0.03);
+            background: rgba(168, 85, 247, 0.03);
             box-shadow: 0 0 15px rgba(168, 85, 247, 0.1) inset;
         }
 
@@ -285,6 +285,118 @@
 
         input:checked + .slider:before {
             transform: translateX(22px);
+        }
+
+        /* Manual filter editor */
+        .filter-editor {
+            margin-top: 1rem;
+            border: 1px solid var(--glass-border);
+            border-radius: 10px;
+            background: rgba(0, 0, 0, 0.16);
+            overflow: hidden;
+        }
+
+        .filter-editor summary {
+            cursor: pointer;
+            list-style: none;
+            padding: 0.85rem 1rem;
+            font-size: 0.9rem;
+            font-weight: 600;
+            display: flex;
+            justify-content: space-between;
+            gap: 0.75rem;
+            user-select: none;
+        }
+
+        .filter-editor summary::-webkit-details-marker {
+            display: none;
+        }
+
+        .filter-editor summary::before {
+            content: "+";
+            color: var(--accent-primary);
+            margin-right: 0.5rem;
+        }
+
+        .filter-editor[open] summary::before {
+            content: "−";
+        }
+
+        .filter-editor-body {
+            padding: 0 1rem 1rem;
+            border-top: 1px solid var(--glass-border);
+        }
+
+        .filter-field {
+            margin-top: 0.9rem;
+        }
+
+        .filter-field label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.4rem;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .filter-textarea {
+            width: 100%;
+            min-height: 130px;
+            resize: vertical;
+            border: 1px solid var(--glass-border);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.03);
+            color: var(--text-main);
+            padding: 0.7rem;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.75rem;
+            line-height: 1.5;
+        }
+
+        .filter-textarea:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+        }
+
+        .filter-help, .filter-status {
+            margin-top: 0.45rem;
+            color: var(--text-muted);
+            font-size: 0.72rem;
+            line-height: 1.35;
+        }
+
+        .filter-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.9rem;
+        }
+
+        .btn-filter {
+            flex: 1;
+            border: 1px solid var(--glass-border);
+            border-radius: 7px;
+            background: rgba(255, 255, 255, 0.04);
+            color: var(--text-main);
+            padding: 0.55rem 0.6rem;
+            font-family: inherit;
+            font-size: 0.76rem;
+            font-weight: 500;
+            cursor: pointer;
+        }
+
+        .btn-filter:hover:not(:disabled) {
+            border-color: var(--border-hover);
+            background: rgba(168, 85, 247, 0.08);
+        }
+
+        .btn-filter.primary {
+            border-color: rgba(52, 211, 153, 0.35);
+            color: var(--success);
+        }
+
+        .btn-filter:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
         }
 
         /* Run button */
@@ -666,6 +778,38 @@
                     </label>
                 </div>
 
+                <details class="filter-editor" id="filter-editor">
+                    <summary>
+                        <span>Manual Filter Rules</span>
+                        <span id="filter-summary" style="font-size: 0.72rem; color: var(--text-muted); font-weight: 400;">Loading...</span>
+                    </summary>
+                    <div class="filter-editor-body">
+                        <div class="filter-help">
+                            Enter one phrase or regular expression per line. Rules are case-insensitive and apply to the next extraction.
+                        </div>
+                        <div class="filter-field">
+                            <label for="filter-keywords">
+                                <span>Include when matched</span>
+                                <span id="keyword-count">0 rules</span>
+                            </label>
+                            <textarea class="filter-textarea" id="filter-keywords" spellcheck="false" placeholder="\bcctv\b&#10;\btelephone[s]?\b"></textarea>
+                        </div>
+                        <div class="filter-field">
+                            <label for="filter-exclusions">
+                                <span>Exclude when matched</span>
+                                <span id="exclusion-count">0 rules</span>
+                            </label>
+                            <textarea class="filter-textarea" id="filter-exclusions" spellcheck="false" placeholder="\bmobile toilet\b&#10;\bpiping material specification\b"></textarea>
+                        </div>
+                        <div class="filter-actions">
+                            <button type="button" class="btn-filter" id="btn-filter-reload">Reload</button>
+                            <button type="button" class="btn-filter" id="btn-filter-defaults">Defaults</button>
+                            <button type="button" class="btn-filter primary" id="btn-filter-save">Save & Activate</button>
+                        </div>
+                        <div class="filter-status" id="filter-status">Rules are stored in filter_config.json.</div>
+                    </div>
+                </details>
+
                 <div class="toggle-container" id="api-key-container" style="display: none; flex-direction: column; align-items: flex-start; gap: 0.5rem;">
                     <div style="font-weight: 500; font-size: 0.85rem;">Gemini API Key</div>
                     <input type="password" id="input-api-key" placeholder="Enter API Key" style="width: 100%; background: rgba(255,255,255,0.03); border: 1px solid var(--glass-border); border-radius: 6px; padding: 0.4rem 0.75rem; color: var(--text-main); font-family: inherit; font-size: 0.85rem;">
@@ -761,10 +905,19 @@
         const uploadZone = document.getElementById('upload-zone');
         const fileInput = document.getElementById('file-input');
         const uploadStatus = document.getElementById('upload-status');
-const toggleForce = document.getElementById('toggle-force');
+        const toggleForce = document.getElementById('toggle-force');
         const toggleAi = document.getElementById('toggle-ai');
         const toggleBypass = document.getElementById('toggle-bypass');
         const toggleNoFilter = document.getElementById('toggle-no-filter');
+        const filterKeywords = document.getElementById('filter-keywords');
+        const filterExclusions = document.getElementById('filter-exclusions');
+        const filterSummary = document.getElementById('filter-summary');
+        const filterStatus = document.getElementById('filter-status');
+        const keywordCount = document.getElementById('keyword-count');
+        const exclusionCount = document.getElementById('exclusion-count');
+        const btnFilterReload = document.getElementById('btn-filter-reload');
+        const btnFilterDefaults = document.getElementById('btn-filter-defaults');
+        const btnFilterSave = document.getElementById('btn-filter-save');
         const apiKeyContainer = document.getElementById('api-key-container');
         const inputApiKey = document.getElementById('input-api-key');
         const btnRun = document.getElementById('btn-run');
@@ -784,6 +937,116 @@ const toggleForce = document.getElementById('toggle-force');
         let allRows = [];
         let logPoller = null;
         let isExtracting = false;
+        let selectedUpload = null;
+        let defaultFilterRules = { keywords: [], false_positive_patterns: [] };
+
+        function escapeHtml(value) {
+            return String(value ?? '')
+                .replaceAll('&', '&amp;')
+                .replaceAll('<', '&lt;')
+                .replaceAll('>', '&gt;')
+                .replaceAll('"', '&quot;')
+                .replaceAll("'", '&#039;');
+        }
+
+        function resetRunState() {
+            isExtracting = false;
+            btnRun.disabled = false;
+            runSpinner.style.display = 'none';
+            runText.textContent = 'Start Extraction';
+            progressContainer.style.display = 'none';
+        }
+
+        function rulesFromTextarea(textarea) {
+            return [...new Set(
+                textarea.value
+                    .split(/\r?\n/)
+                    .map(rule => rule.trim())
+                    .filter(Boolean)
+            )];
+        }
+
+        function updateFilterCounts() {
+            const keywords = rulesFromTextarea(filterKeywords);
+            const exclusions = rulesFromTextarea(filterExclusions);
+            keywordCount.textContent = `${keywords.length} rules`;
+            exclusionCount.textContent = `${exclusions.length} rules`;
+            filterSummary.textContent = `${keywords.length} include / ${exclusions.length} exclude`;
+        }
+
+        function setFilterRules(keywords, exclusions) {
+            filterKeywords.value = keywords.join('\n');
+            filterExclusions.value = exclusions.join('\n');
+            updateFilterCounts();
+        }
+
+        function setFilterStatus(message, type = 'info') {
+            filterStatus.textContent = message;
+            filterStatus.style.color = type === 'error'
+                ? 'var(--error)'
+                : type === 'success'
+                    ? 'var(--success)'
+                    : 'var(--text-muted)';
+        }
+
+        async function loadFilterRules() {
+            btnFilterReload.disabled = true;
+            setFilterStatus('Loading filter rules...');
+            try {
+                const res = await fetch('/api/filter-config');
+                const data = await res.json();
+                if (!res.ok || !data.success) {
+                    throw new Error(data.error || `Request failed with status ${res.status}`);
+                }
+                defaultFilterRules = data.defaults;
+                setFilterRules(data.keywords, data.false_positive_patterns);
+                setFilterStatus('Loaded saved rules.', 'success');
+            } catch (err) {
+                setFilterStatus(`Could not load rules: ${err.message}`, 'error');
+            } finally {
+                btnFilterReload.disabled = false;
+            }
+        }
+
+        async function saveFilterRules() {
+            const keywords = rulesFromTextarea(filterKeywords);
+            const exclusions = rulesFromTextarea(filterExclusions);
+            btnFilterSave.disabled = true;
+            setFilterStatus('Validating and saving rules...');
+            try {
+                const res = await fetch('/api/filter-config', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        keywords,
+                        false_positive_patterns: exclusions
+                    })
+                });
+                const data = await res.json();
+                if (!res.ok || !data.success) {
+                    throw new Error(data.error || `Request failed with status ${res.status}`);
+                }
+                setFilterRules(keywords, exclusions);
+                setFilterStatus(data.message, 'success');
+                appendLog(data.message, 'success');
+            } catch (err) {
+                setFilterStatus(`Save failed: ${err.message}`, 'error');
+            } finally {
+                btnFilterSave.disabled = false;
+            }
+        }
+
+        filterKeywords.addEventListener('input', updateFilterCounts);
+        filterExclusions.addEventListener('input', updateFilterCounts);
+        btnFilterReload.addEventListener('click', loadFilterRules);
+        btnFilterDefaults.addEventListener('click', () => {
+            setFilterRules(
+                defaultFilterRules.keywords,
+                defaultFilterRules.false_positive_patterns
+            );
+            setFilterStatus('Built-in defaults loaded. Click Save & Activate to apply.');
+        });
+        btnFilterSave.addEventListener('click', saveFilterRules);
 
         // Toggle API key visibility based on AI check
         toggleAi.addEventListener('change', () => {
@@ -816,10 +1079,10 @@ const toggleForce = document.getElementById('toggle-force');
                         div.className = 'pdf-item';
                         div.innerHTML = `
                             <label>
-                                <input type="checkbox" name="selected_files" value="${pdf.name}" onchange="updateSelectedCount()">
+                                <input type="checkbox" name="selected_files" value="${escapeHtml(pdf.name)}" onchange="updateSelectedCount()">
                                 <div style="display: flex; flex-direction: column;">
-                                    <span class="pdf-name" title="${pdf.name}">${pdf.name}</span>
-                                    <span class="pdf-meta">${pdf.size_mb} MB ${pdf.has_mapping ? '• Has mapping specs' : ''}</span>
+                                    <span class="pdf-name" title="${escapeHtml(pdf.name)}">${escapeHtml(pdf.name)}</span>
+                                    <span class="pdf-meta">${escapeHtml(pdf.size_mb)} MB ${pdf.has_mapping ? '&bull; Has mapping specs' : ''}</span>
                                 </div>
                             </label>
                         `;
@@ -861,10 +1124,11 @@ const toggleForce = document.getElementById('toggle-force');
         });
 
         function handleUploadedFile(file) {
-            if (!file.name.toLowerCase().endswith('.pdf') && !file.name.toLowerCase().endsWith('.pdf')) {
+            if (!file.name.toLowerCase().endsWith('.pdf')) {
                 alert('Please upload a PDF file only.');
                 return;
             }
+            selectedUpload = file;
             uploadStatus.style.display = 'block';
             uploadStatus.textContent = `Attached: ${file.name} (${(file.size / (1024 * 1024)).toFixed(2)} MB)`;
             uploadZone.style.borderColor = 'var(--success)';
@@ -913,7 +1177,7 @@ const toggleForce = document.getElementById('toggle-force');
         // Start extraction action
         btnRun.addEventListener('click', async () => {
             const checked = document.querySelectorAll('input[name="selected_files"]:checked');
-            const uploadedFile = fileInput.files[0];
+            const uploadedFile = selectedUpload;
 
             if (checked.length === 0 && !uploadedFile) {
                 alert('Please select at least one local PDF or upload a PDF file.');
@@ -950,7 +1214,7 @@ const toggleForce = document.getElementById('toggle-force');
                 });
                 const data = await res.json();
                 
-                if (data.success) {
+                if (res.ok && data.success) {
                     // Start log polling loop
                     logPoller = setInterval(pollLogs, 800);
                     
@@ -968,11 +1232,7 @@ const toggleForce = document.getElementById('toggle-force');
                             clearInterval(logPoller);
                             await pollLogs(); // Final log drain
                             
-                            isExtracting = false;
-                            btnRun.disabled = false;
-                            runSpinner.style.display = 'none';
-                            runText.textContent = 'Start Extraction';
-                            progressContainer.style.display = 'none';
+                            resetRunState();
                             
                             if (isDone) {
                                 appendLog('Pipeline completed successfully!', 'success');
@@ -985,15 +1245,11 @@ const toggleForce = document.getElementById('toggle-force');
                         }
                     }, 1000);
                 } else {
-                    throw new Error(data.error);
+                    throw new Error(data.error || `Request failed with status ${res.status}`);
                 }
             } catch (err) {
                 alert(`Error starting extraction: ${err.message}`);
-                isExtracting = false;
-                btnRun.disabled = false;
-                runSpinner.style.display = 'none';
-                runText.textContent = 'Start Extraction';
-                progressContainer.style.display = 'none';
+                resetRunState();
             }
         });
 
@@ -1036,12 +1292,12 @@ const toggleForce = document.getElementById('toggle-force');
             rows.forEach(r => {
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
-                    <td style="font-weight: 500; color: var(--accent-primary);">${r["ITB File Name"]}</td>
-                    <td>${r["Clause or Drawing No."]}</td>
-                    <td style="text-align: center;">${r["Page#"]}</td>
-                    <td style="font-weight: 500;">${r["Item"]}</td>
-                    <td style="font-size: 0.85rem; line-height: 1.4;">${r["Requirement"]}</td>
-                    <td style="font-size: 0.85rem; font-style: italic; color: var(--success);">${r["상세 내용"]}</td>
+                    <td style="font-weight: 500; color: var(--accent-primary);">${escapeHtml(r["ITB File Name"])}</td>
+                    <td>${escapeHtml(r["Clause or Drawing No."])}</td>
+                    <td style="text-align: center;">${escapeHtml(r["Page#"])}</td>
+                    <td style="font-weight: 500;">${escapeHtml(r["Item"])}</td>
+                    <td style="font-size: 0.85rem; line-height: 1.4;">${escapeHtml(r["Requirement"])}</td>
+                    <td style="font-size: 0.85rem; font-style: italic; color: var(--success);">${escapeHtml(r["상세 내용"])}</td>
                 `;
                 tableBody.appendChild(tr);
             });
@@ -1049,7 +1305,7 @@ const toggleForce = document.getElementById('toggle-force');
 
         // Search/Filter helper
         searchInput.addEventListener('input', () => {
-            const query = searchInput.value.toLowerCase().strip();
+            const query = searchInput.value.toLowerCase().trim();
             if (!query) {
                 renderTable(allRows);
                 return;
@@ -1066,13 +1322,6 @@ const toggleForce = document.getElementById('toggle-force');
             renderTable(filtered);
         });
 
-        // String helper polyfill
-        if (!String.prototype.strip) {
-            String.prototype.strip = function() {
-                return this.trim();
-            }
-        }
-
         // Download actions
         btnDlXlsx.addEventListener('click', () => {
             window.location.href = '/api/download?format=xlsx';
@@ -1087,8 +1336,8 @@ const toggleForce = document.getElementById('toggle-force');
                 const res = await fetch('/api/status');
                 const statusData = await res.json();
                 if (statusData.output_xlsx && statusData.output_csv) {
-                    btnDlXlsx.innerHTML = `📊 Download Styled Excel<div style="font-size: 0.7rem; font-weight: 400; opacity: 0.8; margin-top: 2px;">${statusData.output_xlsx}</div>`;
-                    btnDlCsv.innerHTML = `📄 Download CSV<div style="font-size: 0.7rem; font-weight: 400; opacity: 0.8; margin-top: 2px;">${statusData.output_csv}</div>`;
+                    btnDlXlsx.innerHTML = `📊 Download Styled Excel<div style="font-size: 0.7rem; font-weight: 400; opacity: 0.8; margin-top: 2px;">${escapeHtml(statusData.output_xlsx)}</div>`;
+                    btnDlCsv.innerHTML = `📄 Download CSV<div style="font-size: 0.7rem; font-weight: 400; opacity: 0.8; margin-top: 2px;">${escapeHtml(statusData.output_csv)}</div>`;
                 }
             } catch (err) {
                 console.error(err);
@@ -1097,6 +1346,7 @@ const toggleForce = document.getElementById('toggle-force');
 
         // Start fetching files on load
         fetchLocalPDFs();
+        loadFilterRules();
         // Check if there is already extracted preview data to show
         loadTablePreview();
         // Set dynamic download button filenames
