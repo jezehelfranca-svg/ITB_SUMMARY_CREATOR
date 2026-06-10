@@ -347,14 +347,28 @@ def generate_excel_table(records, template_path, output_path):
             writer.writerow(row_data)
     print(f"CSV version successfully saved to {output_csv}.")
 
-def run_extraction_suite(bypass_filtering=None, no_filter=None):
+def run_extraction_suite(input_dir=None, recursive=False, bypass_filtering=None, no_filter=None):
     if no_filter is None:
         no_filter = NO_FILTER
     if bypass_filtering is None:
         bypass_filtering = BYPASS_FILTERING
 
-    pdf_files = sorted([f for f in os.listdir(project_dir) if f.lower().endswith('.pdf')])
-    print(f"Found {len(pdf_files)} PDF documents in project directory.")
+    if input_dir is None:
+        input_dir = project_dir
+
+    pdf_files = []
+    if recursive:
+        for root, dirs, files in os.walk(input_dir):
+            for f in files:
+                if f.lower().endswith('.pdf'):
+                    pdf_files.append(os.path.join(root, f))
+    else:
+        for f in os.listdir(input_dir):
+            if f.lower().endswith('.pdf'):
+                pdf_files.append(os.path.join(input_dir, f))
+
+    pdf_files = sorted(pdf_files)
+    print(f"Found {len(pdf_files)} PDF documents in target directory.")
     
     all_records = []
     
@@ -369,11 +383,16 @@ def run_extraction_suite(bypass_filtering=None, no_filter=None):
         enable_chunking=False
     )
     
-    for filename in pdf_files:
-        filepath = os.path.join(project_dir, filename)
-        print(f"Processing document: {filename}...")
+    for filepath in pdf_files:
+        filename = os.path.basename(filepath)
+        print(f"Processing document: {filepath}...")
         
-        doc = fitz.open(filepath)
+        try:
+            doc = fitz.open(filepath)
+        except Exception as e:
+            print(f"[ERROR] Failed to open PDF {filepath}: {e}")
+            continue
+            
         total_pages = len(doc)
         
         # Look up pre-calculated page specs if available
@@ -451,10 +470,12 @@ def main():
     parser.add_argument("--force-extract", action="store_true", help="Force dynamic PDF extraction rather than using database cache")
     parser.add_argument("--bypass-filtering", action="store_true", help="Bypass all false-positive filtering")
     parser.add_argument("--no-filter", action="store_true", help="Do not filter any words; extract all paragraphs")
+    parser.add_argument("--input-dir", type=str, default=None, help="Directory containing PDF files to scan")
+    parser.add_argument("--recursive", action="store_true", help="Scan input directory recursively")
     args = parser.parse_args()
 
-    # Default to loading pre-extracted database if it exists
-    if not args.force_extract and os.path.exists(db_file):
+    # Default to loading pre-extracted database if it exists, unless input_dir is specified
+    if not args.force_extract and os.path.exists(db_file) and not args.input_dir:
         print(f"Loading pre-extracted database from {db_file}...")
         with open(db_file, "r", encoding="utf-8") as f:
             records = json.load(f)
@@ -486,7 +507,7 @@ def main():
         generate_excel_table(sorted_records, example_xlsx, output_xlsx)
     else:
         print("Starting dynamic offline extraction from PDF documents (this may take a few minutes)...")
-        run_extraction_suite(bypass_filtering=args.bypass_filtering, no_filter=args.no_filter)
+        run_extraction_suite(input_dir=args.input_dir, recursive=args.recursive, bypass_filtering=args.bypass_filtering, no_filter=args.no_filter)
 
 if __name__ == "__main__":
     if hasattr(sys.stdout, "reconfigure"):
